@@ -57,7 +57,7 @@ class ImageProcessDataSourceImpl : ImageProcessDataSource {
             Imgproc.drawContours(output,points,i, Scalar(255.0,255.0,255.0))
         }
 
-        return bitmap.copy(bitmap.config, true).apply {
+        return bitmap.copy(bitmap.config!!, true).apply {
             Utils.matToBitmap(output, this)
         }
     }
