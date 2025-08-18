@@ -12,5 +12,6 @@
 /captures
 .externalNativeBuild
 .cxx
-local.properties
-AppSigningKey.jks
+./local.properties
+./AppSigningKey.jks
+./keystore.properties
