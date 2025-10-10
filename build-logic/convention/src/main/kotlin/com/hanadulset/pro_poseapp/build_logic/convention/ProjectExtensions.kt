@@ -7,6 +7,7 @@ import org.gradle.api.artifacts.VersionCatalog
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.provider.Provider
+import org.gradle.kotlin.dsl.accessors.AccessorFormats.internal
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.plugin.use.PluginDependency
 import java.util.Optional
@@ -28,7 +29,7 @@ internal fun DependencyHandler.testImplementation(dependencyNotation: Any): Depe
 internal fun DependencyHandler.testRuntimeOnly(dependencyNotation: Any): Dependency? =
     add("testRuntimeOnly", dependencyNotation)
 
- fun DependencyHandler.implementation(dependencyNotation: Any): Dependency? =
+fun DependencyHandler.implementation(dependencyNotation: Any): Dependency? =
     add("implementation", dependencyNotation)
 
 internal fun DependencyHandler.androidTestImplementation(dependencyNotation: Any): Dependency? =
@@ -43,6 +44,8 @@ internal fun DependencyHandler.ksp(dependencyNotation: Any): Dependency? =
 private val Optional<Provider<PluginDependency>>.getPluginId
     get() = get().get().pluginId
 
-internal fun VersionCatalog.getPluginId(alias: String) = findPlugin(alias).getPluginId
+internal fun Project.findLibrary(name: String) = libs.findLibrary(name).get()
+internal fun Project.findPluginId(name: String) = libs.findPlugin(name).getPluginId
+internal fun Project.findVersion(name: String): String =
+    libs.findVersion(name).get().requiredVersion
 
-internal fun VersionCatalog.getLibrary(alias: String): Provider<MinimalExternalModuleDependency> = findLibrary(alias).get()

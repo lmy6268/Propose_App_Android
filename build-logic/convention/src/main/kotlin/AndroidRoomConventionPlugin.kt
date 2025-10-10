@@ -1,11 +1,10 @@
 import androidx.room.gradle.RoomExtension
 import com.google.devtools.ksp.gradle.KspExtension
-import com.hanadulset.pro_poseapp.build_logic.convention.NameAlias
-import com.hanadulset.pro_poseapp.build_logic.convention.getLibrary
-import com.hanadulset.pro_poseapp.build_logic.convention.getPluginId
+import com.hanadulset.pro_poseapp.build_logic.convention.ConventionRes
+import com.hanadulset.pro_poseapp.build_logic.convention.findLibrary
+import com.hanadulset.pro_poseapp.build_logic.convention.findPluginId
 import com.hanadulset.pro_poseapp.build_logic.convention.implementation
 import com.hanadulset.pro_poseapp.build_logic.convention.ksp
-import com.hanadulset.pro_poseapp.build_logic.convention.libs
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
@@ -15,8 +14,8 @@ class AndroidRoomConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
             with(pluginManager) {
-                apply(libs.getPluginId(NameAlias.Plugins.ROOM))
-                apply(libs.getPluginId(NameAlias.Plugins.KSP))
+                apply(findPluginId(ConventionRes.Plugin.ROOM))
+                apply(findPluginId(ConventionRes.Plugin.KSP))
             }
             extensions.configure<KspExtension> {
                 arg("room.generateKotlin", "true")
@@ -30,9 +29,9 @@ class AndroidRoomConventionPlugin : Plugin<Project> {
             }
 
             dependencies {
-                implementation(libs.getLibrary(NameAlias.Library.ROOM.KTX))
-                implementation(libs.getLibrary(NameAlias.Library.ROOM.RUNTIME))
-                ksp(libs.getLibrary(NameAlias.Library.ROOM.COMPILER))
+                implementation(findLibrary(ConventionRes.Library.ROOM_KTX))
+                implementation(findLibrary(ConventionRes.Library.ROOM_RUNTIME))
+                ksp(findLibrary(ConventionRes.Library.ROOM_COMPILER))
             }
 
 

@@ -28,6 +28,7 @@ import org.opencv.video.Video
 import java.io.ByteArrayOutputStream
 import kotlin.math.pow
 import kotlin.math.sqrt
+import androidx.core.graphics.createBitmap
 
 
 //이미지 처리
@@ -39,22 +40,28 @@ class ImageProcessDataSourceImpl : ImageProcessDataSource {
 
     override fun getFixedImage(bitmap: Bitmap): Bitmap {
         // No implementation found ~ 에러 해결
-        OpenCVLoader.initDebug()
+        OpenCVLoader.initLocal()
         val input = Mat()
 
         Utils.bitmapToMat(bitmap, input) // bitmap을 매트릭스로 변환
         Imgproc.cvtColor(input, input, Imgproc.COLOR_RGB2GRAY) //흑백으로 변경
-        val hierarchy = Mat.zeros(input.size(),input.type())
-        val output =Mat.zeros(input.size(),input.type())
+        val hierarchy = Mat.zeros(input.size(), input.type())
+        val output = Mat.zeros(input.size(), input.type())
         //Canny Edge Detection을 이용하여, 엣지를 추출함.
 
 //        Imgproc.threshold(input,input,127.0,255.0,Imgproc.THRESH_BINARY)
 //        Core.bitwise_not(input,input)
         Imgproc.Canny(input, output, 50.0, 150.0)
         val points = mutableListOf<MatOfPoint>()
-        Imgproc.findContours(input,points, hierarchy, Imgproc.RETR_CCOMP,Imgproc.CHAIN_APPROX_NONE)
-        for(i in points.indices){
-            Imgproc.drawContours(output,points,i, Scalar(255.0,255.0,255.0))
+        Imgproc.findContours(
+            input,
+            points,
+            hierarchy,
+            Imgproc.RETR_CCOMP,
+            Imgproc.CHAIN_APPROX_NONE
+        )
+        for (i in points.indices) {
+            Imgproc.drawContours(output, points, i, Scalar(255.0, 255.0, 255.0))
         }
 
         return bitmap.copy(bitmap.config!!, true).apply {
@@ -72,8 +79,7 @@ class ImageProcessDataSourceImpl : ImageProcessDataSource {
 
     override fun resizeBitmapWithOpenCV(bitmap: Bitmap, size: org.opencv.core.Size): Bitmap {
         val inputImageMat = Mat(bitmap.width, bitmap.height, CvType.CV_8UC3)
-        val outputResizeBitmap =
-            Bitmap.createBitmap(size.width.toInt(), size.height.toInt(), Bitmap.Config.ARGB_8888)
+        val outputResizeBitmap = createBitmap(size.width.toInt(), size.height.toInt(), Bitmap.Config.RGB_565)
         Utils.bitmapToMat(bitmap, inputImageMat)
         Imgproc.cvtColor(inputImageMat, inputImageMat, Imgproc.COLOR_RGBA2RGB) //알파값을 빼고 저장
         Imgproc.resize(inputImageMat, inputImageMat, size)

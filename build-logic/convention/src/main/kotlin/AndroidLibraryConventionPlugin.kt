@@ -1,9 +1,9 @@
 import com.android.build.api.dsl.LibraryExtension
 import com.hanadulset.pro_poseapp.build_logic.convention.AppConfigure
-import com.hanadulset.pro_poseapp.build_logic.convention.NameAlias
+import com.hanadulset.pro_poseapp.build_logic.convention.ConventionRes
 import com.hanadulset.pro_poseapp.build_logic.convention.configureKotlinAndroid
-import com.hanadulset.pro_poseapp.build_logic.convention.getPluginId
-import com.hanadulset.pro_poseapp.build_logic.convention.libs
+import com.hanadulset.pro_poseapp.build_logic.convention.findPluginId
+import com.hanadulset.pro_poseapp.build_logic.convention.findVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
@@ -15,12 +15,10 @@ import org.gradle.kotlin.dsl.configure
 class AndroidLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
-            with(pluginManager) {
-                apply(libs.getPluginId(NameAlias.Plugins.ANDROID_LIB))
-                apply(libs.getPluginId(NameAlias.Plugins.KOTLIN_ANDROID))
-            }
+            pluginManager.apply(findPluginId(ConventionRes.Plugin.ANDROID_LIBRARY))
+            pluginManager.apply(findPluginId(ConventionRes.Plugin.KOTLIN_ANDROID))
             extensions.configure<LibraryExtension> {
-                lint.targetSdk = AppConfigure.TARGET_SDK
+                lint.targetSdk = findVersion("targetSdk").toInt()
                 configureKotlinAndroid(this)
             }
         }
