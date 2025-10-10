@@ -1,8 +1,7 @@
 import com.android.build.api.dsl.LibraryExtension
-import com.hanadulset.pro_poseapp.build_logic.convention.NameAlias
-import com.hanadulset.pro_poseapp.build_logic.convention.getLibrary
+import com.hanadulset.pro_poseapp.build_logic.convention.ConventionRes
+import com.hanadulset.pro_poseapp.build_logic.convention.findLibrary
 import com.hanadulset.pro_poseapp.build_logic.convention.implementation
-import com.hanadulset.pro_poseapp.build_logic.convention.libs
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
@@ -12,8 +11,8 @@ class AndroidFeatureConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         with(target) {
             pluginManager.apply {
-                apply("propose.android.library")
-                apply("propose.android.hilt")
+                apply(ConventionRes.Plugin.ANDROID_LIBRARY_CONVENTION)
+                apply(ConventionRes.Plugin.HILT_CONVENTION)
             }
             extensions.configure<LibraryExtension> {
                 testOptions.animationsDisabled = true
@@ -22,9 +21,9 @@ class AndroidFeatureConventionPlugin : Plugin<Project> {
             dependencies {
 //                implementation(project(NameAlias.Path.CORE.UI))
 //                implementation(project(NameAlias.Path.CORE.DESIGN_SYSTEM))
-                implementation(libs.getLibrary(NameAlias.Library.COMPOSE.HILT_NAVIGATION_COMPOSE))
-                implementation(libs.getLibrary(NameAlias.Library.COMPOSE.VIEWMODEL_COMPOSE))
-                implementation(libs.getLibrary(NameAlias.Library.COMPOSE.RUNTIME_COMPOSE))
+                implementation(findLibrary(ConventionRes.Library.COMPOSE_HILT_NAVIGATION))
+                implementation(findLibrary(ConventionRes.Library.COMPOSE_VIEWMODEL))
+                implementation(findLibrary(ConventionRes.Library.COMPOSE_RUNTIME))
             }
         }
     }

@@ -82,7 +82,7 @@ class ImageRepositoryImpl @Inject constructor(@ApplicationContext private val ap
             MediaStore.Images.Media.getBitmap(applicationContext.contentResolver, uri);
         }
 
-        backgroundBitmap.copy(Bitmap.Config.ARGB_8888,true).run {
+        backgroundBitmap.copy(Bitmap.Config.RGB_565,true).run {
             val scaledSize =  if(width/height.toFloat() == 9/16F)  Size(720,1280) else Size(480,640)
             Bitmap.createScaledBitmap(this,scaledSize.width,scaledSize.height,false).let{
                 getFixedScreen(it).apply {
