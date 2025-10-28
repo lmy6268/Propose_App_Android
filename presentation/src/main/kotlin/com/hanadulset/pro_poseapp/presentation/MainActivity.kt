@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.navigation.compose.rememberNavController
-import com.hanadulset.pro_poseapp.presentation.component.ProPoseTheme
+import com.hanadulset.pro_poseapp.core.designsystem.theme.ProPoseTheme
 import com.hanadulset.pro_poseapp.presentation.core.MainScreen
 import com.hanadulset.pro_poseapp.utils.eventlog.AnalyticsManager
 import dagger.hilt.android.AndroidEntryPoint
@@ -69,7 +69,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier
                         .fillMaxSize()
                         .navigationBarsPadding() //시스템의 네비게이션 높이에 맞게 패딩을 적용할 수 있게 함.
-                    , navController,
+                    ,
+                    navController,
                 )
             }
         }

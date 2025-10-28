@@ -23,9 +23,9 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -49,9 +49,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hanadulset.pro_poseapp.core.designsystem.theme.*
 import com.hanadulset.pro_poseapp.presentation.R
-import com.hanadulset.pro_poseapp.presentation.component.LocalColors
-import com.hanadulset.pro_poseapp.presentation.component.LocalTypography
 import com.hanadulset.pro_poseapp.presentation.core.CustomDialog
 import com.hanadulset.pro_poseapp.utils.CheckResponse
 import com.hanadulset.pro_poseapp.utils.DownloadState
@@ -149,7 +148,7 @@ object ModelDownloadScreen {
         val onDownloading = if (isDownload == null || isDownload) "다운로드" else "업데이트"
         val stopDownload = if (isDownload == null || isDownload) "앱 종료" else "다음에 받기"
         val screenHeight = LocalConfiguration.current.screenHeightDp.dp
-        val fontStyle = LocalTypography.current
+        val fontStyle = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography.current
 
         val currentBytesMB = downloadedInfo.currentBytes / 1e+6
         val totalBytesMB = downloadedInfo.totalBytes / 1e+6
