@@ -45,11 +45,10 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
+import com.hanadulset.pro_poseapp.core.designsystem.theme.primaryGreen100
 import com.hanadulset.pro_poseapp.presentation.R
-import com.hanadulset.pro_poseapp.presentation.component.LocalColors
-import com.hanadulset.pro_poseapp.presentation.component.LocalTypography
-import com.hanadulset.pro_poseapp.presentation.component.UIComponents
-import com.hanadulset.pro_poseapp.presentation.component.UIComponents.SettingBoxItem
+import com.hanadulset.pro_poseapp.presentation.component.SettingBoxItem
+import com.hanadulset.pro_poseapp.presentation.component.SettingBoxItemWithToggle
 import com.hanadulset.pro_poseapp.utils.UserSet
 
 
@@ -100,7 +99,8 @@ object SettingScreen {
 
 
         Surface(
-            color = LocalColors.current.primaryGreen100, modifier = modifier.fillMaxSize()
+            color = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current.primaryGreen100,
+            modifier = modifier.fillMaxSize()
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 Box(
@@ -134,9 +134,13 @@ object SettingScreen {
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.Start
                         ) {
-                            Text(text = "프로_포즈", style = LocalTypography.current.heading01)
                             Text(
-                                text = "V $versionName", style = LocalTypography.current.sub01
+                                text = "프로_포즈",
+                                style = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography.current.heading01
+                            )
+                            Text(
+                                text = "V $versionName",
+                                style = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography.current.sub01
                             )
                         }
                     }
@@ -146,7 +150,7 @@ object SettingScreen {
                             .align(Alignment.Center)
                             .padding(top = 150.dp),
                         text = "Copyright 2023. 하나, 둘, 셋  All rights reserved.",
-                        style = LocalTypography.current.sub02
+                        style = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography.current.sub02
                     )
                 }
 
@@ -171,17 +175,20 @@ object SettingScreen {
                         )
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text(text = "앱 설정", style = LocalTypography.current.heading01)
+                            Text(
+                                text = "앱 설정",
+                                style = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography.current.heading01
+                            )
                             Divider()
                         }
-                        UIComponents.SettingBoxItemWithToggle(
+                        SettingBoxItemWithToggle(
                             modifier = Modifier.fillMaxWidth(),
                             innerText = "구도 추천",
                             isToggled = { setState.value.isCompOn },
                             onToggleEvent = {
                                 setState.value = setState.value.copy(isCompOn = it)
                             })
-                        UIComponents.SettingBoxItemWithToggle(
+                        SettingBoxItemWithToggle(
                             modifier = Modifier.fillMaxWidth(),
                             innerText = "포즈 추천",
                             isEnabled = { setState.value.isCompOn },
@@ -191,7 +198,10 @@ object SettingScreen {
                             })
 
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text(text = "앱 정보", style = LocalTypography.current.heading01)
+                            Text(
+                                text = "앱 정보",
+                                style = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography.current.heading01
+                            )
                             Divider()
                         }
                         SettingBoxItem(

@@ -8,9 +8,6 @@ import android.hardware.SensorManager
 import android.util.Range
 import android.util.SizeF
 import android.view.OrientationEventListener
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,7 +34,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.center
-import com.hanadulset.pro_poseapp.presentation.component.LocalColors
+import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
+import com.hanadulset.pro_poseapp.core.designsystem.theme.primaryGreen100
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -170,7 +168,7 @@ object CameraScreenCompScreen {
         val isMatched = remember {
             mutableStateOf(false)
         }
-        val localColor = LocalColors.current
+        val localColor = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current
         val isTriggered = remember {
             mutableStateOf(false)
         }

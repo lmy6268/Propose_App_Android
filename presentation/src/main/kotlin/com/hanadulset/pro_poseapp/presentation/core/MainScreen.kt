@@ -46,7 +46,7 @@ import androidx.navigation.navigation
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import com.hanadulset.pro_poseapp.presentation.component.UIComponents
+import com.hanadulset.pro_poseapp.presentation.component.AnimatedSlideToRight
 import com.hanadulset.pro_poseapp.presentation.core.permission.PermScreen
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraViewModel
 import com.hanadulset.pro_poseapp.presentation.feature.camera.Screen
@@ -266,7 +266,7 @@ object MainScreen {
                     cameraViewModel.loadUserSet()
                 }
                 if (isOnClose.value.not()) {
-                    UIComponents.AnimatedSlideToRight(isVisible = userSet.value != null) {
+                    AnimatedSlideToRight(isVisible = userSet.value != null) {
                         Screen(cameraViewModel,
                             previewView = previewView,
                             onClickSettingBtnEvent = {
@@ -363,7 +363,7 @@ object MainScreen {
                 LaunchedEffect(key1 = Unit, key2 = userSet) {
                     cameraViewModel.loadUserSet()
                 }
-                UIComponents.AnimatedSlideToRight(isVisible = userSet != null) {
+                AnimatedSlideToRight(isVisible = userSet != null) {
                     SettingScreen.Screen(userSet = userSet!!, onSaveUserSet = { setting ->
                         cameraViewModel.saveUserSet(setting)
                     }, onBackPressed = {

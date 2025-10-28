@@ -18,6 +18,7 @@ android {
     packaging {
         jniLibs.pickFirsts += "**/libc++_shared.so"
     }
+
     val properties = Properties().apply {
         load(FileInputStream(rootProject.file("keystore.properties")))
     }

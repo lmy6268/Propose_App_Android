@@ -73,8 +73,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import com.hanadulset.pro_poseapp.core.designsystem.component.noRippleClickable
+import com.hanadulset.pro_poseapp.core.designsystem.icon.ProPoseIcon
 import com.hanadulset.pro_poseapp.presentation.R
-import com.hanadulset.pro_poseapp.presentation.component.LocalColors
+import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
+import com.hanadulset.pro_poseapp.core.designsystem.theme.primaryGreen100
+import com.hanadulset.pro_poseapp.core.designsystem.theme.secondaryWhite100
+import com.hanadulset.pro_poseapp.core.designsystem.theme.subPrimaryBlack100
+import com.hanadulset.pro_poseapp.core.designsystem.theme.subSecondaryGray100
+import com.hanadulset.pro_poseapp.core.designsystem.theme.subSecondaryGray80
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenButtons.SwitchableButton
 
 object CameraScreenButtons {
@@ -231,7 +238,7 @@ object CameraScreenButtons {
         val animatePosition =
             animateFloatAsState(
                 targetValue = if (switchON.value) with(LocalDensity.current) { (buttonSize.width - thumbRadius - gapBetweenThumbAndTrackEdge).toPx() }
-            else with(LocalDensity.current) { (thumbRadius + gapBetweenThumbAndTrackEdge).toPx() },
+                else with(LocalDensity.current) { (thumbRadius + gapBetweenThumbAndTrackEdge).toPx() },
                 label = ""
             )
         Column(modifier) {
@@ -285,7 +292,7 @@ object CameraScreenButtons {
         fixedBtnStatus: Boolean,
     ) {
         val isFixedBtnPressed by rememberUpdatedState(newValue = fixedBtnStatus)
-
+//        val fixedVector =
         val fixedBtnImage = if (isFixedBtnPressed) R.drawable.fixbutton_fixed
         else R.drawable.fixbutton_unfixed
 
@@ -293,39 +300,32 @@ object CameraScreenButtons {
         val inActivatedColor = LocalColors.current.subSecondaryGray100
 
 
+        val mutableInteractionSource = remember { MutableInteractionSource() }
 
-        CompositionLocalProvider(LocalRippleTheme provides LocalButtonRippleTheme.apply {
-            setRippleEffect(
-                defaultColor = if (isFixedBtnPressed) activatedColor
-                else inActivatedColor, alphaColor = Color.Black
+        Surface(
+            modifier = modifier
+                .wrapContentSize()
+                .clickable(
+                    indication = rememberRipple(
+                        color = if (isFixedBtnPressed) activatedColor.compositeOver(
+                            Color.Black
+                        )
+                        else inActivatedColor.compositeOver(Color.Black),
+                        bounded = true,
+                        radius = buttonSize / 2
+                    ), //Ripple 효과 제거
+                    interactionSource = mutableInteractionSource,
+                    onClick = {
+                        onFixedButtonPressedEvent()
+                    }
+                ), shape = CircleShape
+        ) {
+            Icon(
+                modifier = Modifier.size(buttonSize),
+                painter = painterResource(fixedBtnImage),
+                tint = Color.Unspecified,
+                contentDescription = "고정버튼"
             )
-        }) {
-            val mutableInteractionSource = remember { MutableInteractionSource() }
-
-            Surface(
-                modifier = modifier
-                    .wrapContentSize()
-                    .clickable(
-                        indication = rememberRipple(
-                            color = if (isFixedBtnPressed) activatedColor.compositeOver(
-                                Color.Black
-                            ) else inActivatedColor.compositeOver(Color.Black),
-                            bounded = true,
-                            radius = buttonSize / 2
-                        ), //Ripple 효과 제거
-                        interactionSource = mutableInteractionSource,
-                        onClick = {
-                            onFixedButtonPressedEvent()
-                        }
-                    ), shape = CircleShape
-            ) {
-                Icon(
-                    modifier = Modifier.size(buttonSize),
-                    painter = painterResource(id = fixedBtnImage),
-                    tint = Color.Unspecified,
-                    contentDescription = "고정버튼"
-                )
-            }
         }
 
 
@@ -359,7 +359,8 @@ object CameraScreenButtons {
                         bounded = true,
                         radius = buttonSize / 2
                     ), //Ripple 효과 제거
-                    interactionSource = interactionSource, onClick = onClickEvent
+                    interactionSource = interactionSource,
+                    onClick = onClickEvent
                 ), shape = CircleShape
         ) {
             Icon(
@@ -520,6 +521,7 @@ object CameraScreenButtons {
                     contentDescription = type
                 )
                 Text(
+                    textAlign = TextAlign.Center,
                     color = LocalColors.current.subPrimaryBlack100,
                     text = itemList[selectedIndexState.intValue], //화면 비 글씨 표기
                     fontWeight = FontWeight(FontWeight.Bold.weight),

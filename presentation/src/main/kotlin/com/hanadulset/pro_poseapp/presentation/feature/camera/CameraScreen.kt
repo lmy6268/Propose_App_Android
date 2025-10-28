@@ -50,8 +50,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageOptions
-import com.hanadulset.pro_poseapp.presentation.component.LocalColors
-import com.hanadulset.pro_poseapp.presentation.component.UIComponents.AnimatedSlideToLeft
+import com.hanadulset.pro_poseapp.core.designsystem.theme.primaryGreen100
+import com.hanadulset.pro_poseapp.core.designsystem.theme.secondaryWhite100
+import com.hanadulset.pro_poseapp.core.designsystem.theme.subPrimaryBlack100
+import com.hanadulset.pro_poseapp.presentation.component.AnimatedSlideToLeft
 import com.hanadulset.pro_poseapp.utils.UserSet
 import com.hanadulset.pro_poseapp.utils.camera.ViewRate
 import com.hanadulset.pro_poseapp.utils.eventlog.CaptureEventData
@@ -148,7 +150,7 @@ fun Screen(
         aspectRatio: ViewRate,
         onGetPoseFromImage: (Uri) -> Unit,
     ): GetContentActivityResult {
-        val currentColor= LocalColors.current
+        val currentColor= com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current
         val cropImageLauncher =
             rememberLauncherForActivityResult(contract = CropImageContract()) { result ->
                 if (result.isSuccessful) {
@@ -304,7 +306,7 @@ fun Screen(
     Column(
         Modifier
             .fillMaxSize()
-            .background(LocalColors.current.secondaryWhite100)
+            .background(com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current.secondaryWhite100)
             .displayCutoutPadding()
     ) {
         //상단 버튼
@@ -335,7 +337,7 @@ fun Screen(
                 .weight(11F)
                 .then(
                     if (aspectRatio.value.aspectRatioType == AspectRatio.RATIO_16_9) Modifier.background(
-                        color = LocalColors.current.subPrimaryBlack100
+                        color = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current.subPrimaryBlack100
                     ) else Modifier
                 )
                 .pointerInteropFilter(
@@ -489,7 +491,7 @@ fun Screen(
                 } else Modifier.align(Alignment.BottomCenter))
                 .then(
                     if (aspectRatio.value.aspectRatioType == AspectRatio.RATIO_16_9) Modifier.background(
-                        LocalColors.current.subPrimaryBlack100.copy(
+                        com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current.subPrimaryBlack100.copy(
                             alpha = 0.5f
                         )
                     ) else Modifier

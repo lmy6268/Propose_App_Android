@@ -28,8 +28,9 @@ import androidx.compose.ui.unit.sp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.hanadulset.pro_poseapp.presentation.R
-import com.hanadulset.pro_poseapp.presentation.component.LocalColors
-import com.hanadulset.pro_poseapp.presentation.component.LocalTypography
+import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
+import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography
+import com.hanadulset.pro_poseapp.core.designsystem.theme.primaryGreen100
 
 object PermScreen {
     @OptIn(ExperimentalPermissionsApi::class)
