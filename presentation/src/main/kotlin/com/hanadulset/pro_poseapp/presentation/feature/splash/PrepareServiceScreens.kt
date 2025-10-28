@@ -43,9 +43,6 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.hanadulset.pro_poseapp.core.designsystem.component.CircularProgressBar
 import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
-import com.hanadulset.pro_poseapp.core.designsystem.theme.primaryGreen100
-import com.hanadulset.pro_poseapp.core.designsystem.theme.secondaryWhite100
-import com.hanadulset.pro_poseapp.core.designsystem.theme.subSecondaryGray100
 import com.hanadulset.pro_poseapp.presentation.R
 import com.hanadulset.pro_poseapp.presentation.core.CustomDialog
 import com.hanadulset.pro_poseapp.utils.camera.CameraState
@@ -137,7 +134,7 @@ object PrepareServiceScreens {
                     .build()
             )
             val style = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography.current
-            val color = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current
+            val color = LocalColors.current
             val positionOfTitle = remember { mutableStateOf(Offset.Zero) }
 
             Column(
@@ -171,7 +168,7 @@ object PrepareServiceScreens {
             }
             Canvas(modifier = Modifier.fillMaxSize()) {
                 drawCircle(
-                    color = color.primaryGreen100,
+                    color = color.primaryBlue100,
                     radius = localDensity.run { 320.dp.toPx() },
                     center = localDensity.run {
                         positionOfTitle.value.let {
@@ -184,7 +181,7 @@ object PrepareServiceScreens {
                 Box(
                     modifier = Modifier
                         .zIndex(2F)
-                        .background(LocalColors.current.secondaryWhite100.copy(alpha = 0.5F))
+                        .background(LocalColors.current.background100.copy(alpha = 0.5F))
                         .fillMaxSize()
                 )
                 {
@@ -296,7 +293,7 @@ object PrepareServiceScreens {
                     .build()
             )
             val style = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography.current
-            val color = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current
+            val color = LocalColors.current
 
             val positionOfTitle = remember {
                 mutableStateOf(Offset.Zero)
@@ -332,8 +329,8 @@ object PrepareServiceScreens {
                     )
                 ) {
                     CircularProgressBar(
-                        barColor = LocalColors.current.secondaryWhite100,
-                        backgroundColor = LocalColors.current.subSecondaryGray100
+                        barColor = LocalColors.current.background100,
+                        backgroundColor = LocalColors.current.textSecondary100
                     )
                     Text(
                         text = "$APP_NAME 로딩중...",
@@ -344,7 +341,7 @@ object PrepareServiceScreens {
             }
             Canvas(modifier = Modifier.fillMaxSize()) {
                 drawCircle(
-                    color = color.primaryGreen100,
+                    color = color.primaryBlue100,
                     radius = localDensity.run { 320.dp.toPx() },
                     center = localDensity.run {
                         positionOfTitle.value.let {

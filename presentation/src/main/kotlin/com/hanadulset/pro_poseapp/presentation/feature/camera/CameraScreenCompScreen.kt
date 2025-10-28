@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.center
 import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
-import com.hanadulset.pro_poseapp.core.designsystem.theme.primaryGreen100
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -168,7 +167,7 @@ object CameraScreenCompScreen {
         val isMatched = remember {
             mutableStateOf(false)
         }
-        val localColor = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current
+        val localColor = LocalColors.current
         val isTriggered = remember {
             mutableStateOf(false)
         }
@@ -239,7 +238,7 @@ object CameraScreenCompScreen {
                         drawCircle(
                             center = pointOffset.value(),
                             radius = pointRadius,
-                            color = localColor.primaryGreen100.copy(alpha = 0.8f),
+                            color = localColor.primaryBlue100.copy(alpha = 0.8f),
                         )
                     }
                 }

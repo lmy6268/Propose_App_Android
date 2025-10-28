@@ -20,9 +20,6 @@ import androidx.compose.ui.unit.dp
 import com.hanadulset.pro_poseapp.core.designsystem.icon.ProPoseIcon
 import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
 import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography
-import com.hanadulset.pro_poseapp.core.designsystem.theme.primaryGreen100
-import com.hanadulset.pro_poseapp.core.designsystem.theme.subPrimaryBlack100
-import com.hanadulset.pro_poseapp.core.designsystem.theme.subSecondaryGray100
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenButtons.SwitchableButton
 
 @Composable
@@ -38,7 +35,7 @@ fun SettingBoxItemWithToggle(
         modifier = modifier
             .background(
                 shape = RoundedCornerShape(50.dp),
-                color = LocalColors.current.subSecondaryGray100.copy(alpha = 0.2F)
+                color = LocalColors.current.textSecondary100.copy(alpha = 0.2F)
             )
             .padding(horizontal = 20.dp)
             .padding(vertical = 10.dp)
@@ -50,14 +47,14 @@ fun SettingBoxItemWithToggle(
             fontSize = LocalDensity.current.run {
                 (innerTextSize * 0.7F).toSp()
             },
-            color = if (isEnabled()) LocalColors.current.subPrimaryBlack100
-            else LocalColors.current.subSecondaryGray100
+            color = if (isEnabled()) LocalColors.current.textPrimary100
+            else LocalColors.current.textSecondary100
         )
         SwitchableButton(
             modifier = Modifier.align(Alignment.CenterEnd),
             init = isToggled(),
-            negativeColor = if (isEnabled()) (LocalColors.current.subPrimaryBlack100) else LocalColors.current.subSecondaryGray100,
-            positiveColor = if (isEnabled()) (LocalColors.current.primaryGreen100) else LocalColors.current.subSecondaryGray100,
+            negativeColor = if (isEnabled()) (LocalColors.current.textPrimary100) else LocalColors.current.textSecondary100,
+            positiveColor = if (isEnabled()) (LocalColors.current.primaryBlue100) else LocalColors.current.textSecondary100,
             onChangeState = onToggleEvent,
             scale = 1F,
             isEnabled = isEnabled,
@@ -91,7 +88,7 @@ fun SettingBoxItem(
             )
             .background(
                 shape = RoundedCornerShape(50.dp),
-                color = LocalColors.current.subSecondaryGray100.copy(alpha = 0.2F)
+                color = LocalColors.current.textSecondary100.copy(alpha = 0.2F)
             )
             .padding(start = 20.dp, end = 10.dp)
             .padding(vertical = 10.dp)
