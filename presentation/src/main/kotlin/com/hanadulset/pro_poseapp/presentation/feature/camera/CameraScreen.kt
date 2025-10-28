@@ -50,9 +50,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageOptions
-import com.hanadulset.pro_poseapp.core.designsystem.theme.primaryGreen100
-import com.hanadulset.pro_poseapp.core.designsystem.theme.secondaryWhite100
-import com.hanadulset.pro_poseapp.core.designsystem.theme.subPrimaryBlack100
 import com.hanadulset.pro_poseapp.presentation.component.AnimatedSlideToLeft
 import com.hanadulset.pro_poseapp.utils.UserSet
 import com.hanadulset.pro_poseapp.utils.camera.ViewRate
@@ -175,12 +172,12 @@ fun Screen(
                             aspectRatioX = aspectRatio.aspectRatioSize.width,
                             aspectRatioY = aspectRatio.aspectRatioSize.height,
                             fixAspectRatio = true,
-                          toolbarColor = currentColor.primaryGreen100.toArgb(),
-                            toolbarBackButtonColor = currentColor.subPrimaryBlack100.toArgb(),
-                            activityMenuIconColor = currentColor.subPrimaryBlack100.toArgb(),
-                            activityMenuTextColor = currentColor.subPrimaryBlack100.toArgb(),
+                          toolbarColor = currentColor.primaryBlue100.toArgb(),
+                            toolbarBackButtonColor = currentColor.textPrimary100.toArgb(),
+                            activityMenuIconColor = currentColor.textPrimary100.toArgb(),
+                            activityMenuTextColor = currentColor.textPrimary100.toArgb(),
                             cropperLabelText = "dasdass",
-                            cropperLabelTextColor = currentColor.primaryGreen100.toArgb()
+                            cropperLabelTextColor = currentColor.primaryBlue100.toArgb()
                         )
                     )
                     cropImageLauncher.launch(cropOptions)
@@ -306,7 +303,7 @@ fun Screen(
     Column(
         Modifier
             .fillMaxSize()
-            .background(com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current.secondaryWhite100)
+            .background(com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current.background100)
             .displayCutoutPadding()
     ) {
         //상단 버튼
@@ -337,7 +334,7 @@ fun Screen(
                 .weight(11F)
                 .then(
                     if (aspectRatio.value.aspectRatioType == AspectRatio.RATIO_16_9) Modifier.background(
-                        color = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current.subPrimaryBlack100
+                        color = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current.textPrimary100
                     ) else Modifier
                 )
                 .pointerInteropFilter(
@@ -491,7 +488,7 @@ fun Screen(
                 } else Modifier.align(Alignment.BottomCenter))
                 .then(
                     if (aspectRatio.value.aspectRatioType == AspectRatio.RATIO_16_9) Modifier.background(
-                        com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current.subPrimaryBlack100.copy(
+                        com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current.textPrimary100.copy(
                             alpha = 0.5f
                         )
                     ) else Modifier

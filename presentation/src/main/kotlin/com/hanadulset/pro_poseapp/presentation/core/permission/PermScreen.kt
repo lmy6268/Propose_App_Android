@@ -30,7 +30,6 @@ import com.google.accompanist.permissions.MultiplePermissionsState
 import com.hanadulset.pro_poseapp.presentation.R
 import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
 import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography
-import com.hanadulset.pro_poseapp.core.designsystem.theme.primaryGreen100
 
 object PermScreen {
     @OptIn(ExperimentalPermissionsApi::class)
@@ -69,7 +68,7 @@ object PermScreen {
         Surface(
             modifier = Modifier
                 .fillMaxSize(),
-            color = LocalColors.current.primaryGreen100
+            color = LocalColors.current.primaryBlue100
         ) {
             Column(
                 modifier = Modifier
