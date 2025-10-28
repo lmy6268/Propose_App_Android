@@ -28,7 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,7 +45,6 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
-import com.hanadulset.pro_poseapp.core.designsystem.theme.primaryGreen100
 import com.hanadulset.pro_poseapp.presentation.R
 import com.hanadulset.pro_poseapp.presentation.component.SettingBoxItem
 import com.hanadulset.pro_poseapp.presentation.component.SettingBoxItemWithToggle
@@ -99,7 +98,7 @@ object SettingScreen {
 
 
         Surface(
-            color = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current.primaryGreen100,
+            color = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current.primaryBlue100,
             modifier = modifier.fillMaxSize()
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
@@ -179,7 +178,7 @@ object SettingScreen {
                                 text = "앱 설정",
                                 style = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography.current.heading01
                             )
-                            Divider()
+                            HorizontalDivider()
                         }
                         SettingBoxItemWithToggle(
                             modifier = Modifier.fillMaxWidth(),
@@ -202,7 +201,7 @@ object SettingScreen {
                                 text = "앱 정보",
                                 style = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography.current.heading01
                             )
-                            Divider()
+                            HorizontalDivider()
                         }
                         SettingBoxItem(
                             modifier = Modifier.fillMaxWidth(),

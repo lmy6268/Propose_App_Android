@@ -87,12 +87,3 @@ val DarkProPoseColors = ProPoseColors(
     isLight = false
 )
 
-val ProPoseColors.primaryGreen100: Color get() = this.primaryBlue100
-val ProPoseColors.primaryGreen80: Color get() = this.primaryBlue80
-val ProPoseColors.primaryGreen50: Color get() = this.primaryBlue50
-val ProPoseColors.secondaryWhite100: Color get() = this.background100
-val ProPoseColors.secondaryWhite80: Color get() = this.background80
-val ProPoseColors.subPrimaryBlack100: Color get() = this.textPrimary100
-val ProPoseColors.subPrimaryBlack80: Color get() = this.textPrimary80
-val ProPoseColors.subSecondaryGray100: Color get() = this.textSecondary100
-val ProPoseColors.subSecondaryGray80: Color get() = this.textSecondary80

@@ -94,7 +94,7 @@ object ModelDownloadScreen {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(LocalColors.current.primaryGreen100)
+                .background(LocalColors.current.primaryBlue100)
                 .navigationBarsPadding(),
         ) {
             if (checkState!!.downloadType == CheckResponse.TYPE_MUST_DOWNLOAD
@@ -148,7 +148,7 @@ object ModelDownloadScreen {
         val onDownloading = if (isDownload == null || isDownload) "다운로드" else "업데이트"
         val stopDownload = if (isDownload == null || isDownload) "앱 종료" else "다음에 받기"
         val screenHeight = LocalConfiguration.current.screenHeightDp.dp
-        val fontStyle = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography.current
+        val fontStyle = LocalTypography.current
 
         val currentBytesMB = downloadedInfo.currentBytes / 1e+6
         val totalBytesMB = downloadedInfo.totalBytes / 1e+6
@@ -157,7 +157,7 @@ object ModelDownloadScreen {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(LocalColors.current.primaryGreen100)
+                .background(LocalColors.current.primaryBlue100)
         ) {
             Surface(
                 modifier = Modifier
@@ -247,7 +247,7 @@ object ModelDownloadScreen {
         modifier: Modifier = Modifier,
         progress: Float,
         backgroundColor: Color = Color(0xFFF0F0F0),
-        color: Color = LocalColors.current.primaryGreen100,
+        color: Color = LocalColors.current.primaryBlue100,
     ) {
         val strokeWidth = LocalDensity.current.run { 15.dp.toPx() }
 

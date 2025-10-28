@@ -19,8 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
-import com.hanadulset.pro_poseapp.core.designsystem.theme.secondaryWhite100
-import com.hanadulset.pro_poseapp.core.designsystem.theme.subPrimaryBlack100
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenButtons.ExpandableButton
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenUpperBar.UpperBar
 import com.hanadulset.pro_poseapp.utils.camera.ViewRate
@@ -73,7 +71,7 @@ object CameraScreenUpperBar {
                     modifier = Modifier.border(
                         BorderStroke(
                             2.dp,
-                            LocalColors.current.subPrimaryBlack100
+                            LocalColors.current.textPrimary100
                         ),
                         shape = CircleShape
                     ),
@@ -85,10 +83,10 @@ object CameraScreenUpperBar {
                             beforeTime.longValue = clickedTime
                         }
                     },
-                    colorTint = LocalColors.current.secondaryWhite100,
+                    colorTint = LocalColors.current.background100,
                     buttonSize = buttonSize,
                     buttonText = "i",
-                    buttonTextColor = LocalColors.current.subPrimaryBlack100,
+                    buttonTextColor = LocalColors.current.textPrimary100,
                     buttonTextSize = (buttonSize.value.toInt() / 2)
                 )
 

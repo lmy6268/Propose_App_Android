@@ -2,17 +2,13 @@ package com.hanadulset.pro_poseapp.presentation.feature.camera
 
 import android.net.Uri
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.snapping.SnapLayoutInfoProvider
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -23,8 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ripple.rememberRipple
@@ -36,7 +30,6 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -57,25 +50,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
-import com.hanadulset.pro_poseapp.core.designsystem.component.CircularProgressBar
 import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
-import com.hanadulset.pro_poseapp.core.designsystem.theme.primaryGreen100
-import com.hanadulset.pro_poseapp.core.designsystem.theme.secondaryWhite100
-import com.hanadulset.pro_poseapp.core.designsystem.theme.secondaryWhite80
-import com.hanadulset.pro_poseapp.core.designsystem.theme.subPrimaryBlack100
-import com.hanadulset.pro_poseapp.core.designsystem.theme.subSecondaryGray100
 import com.hanadulset.pro_poseapp.presentation.R
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenButtons.ParticularZoomButton
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenButtons.ToggledButton
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenUnderBar.defaultButtonSize
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenUnderBar.galleryButtonSize
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenUnderBar.shutterButtonSize
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.PoseSelectSlider
 import com.hanadulset.pro_poseapp.utils.pose.PoseData
 
 object CameraScreenUnderBar {
@@ -168,8 +154,8 @@ fun UpperLayer(
             onClickEvent = onUserEdgeDetectionClicked,
             buttonStatus = edgeDetectorState(),
             buttonText = "따오기",
-            inActivatedColor = LocalColors.current.secondaryWhite100,
-            buttonTextColor = LocalColors.current.subPrimaryBlack100
+            inActivatedColor = LocalColors.current.background100,
+            buttonTextColor = LocalColors.current.textPrimary100
         )
         //줌 레벨 설정 버튼
 
@@ -228,8 +214,8 @@ fun LowerLayer(
             buttonSize = defaultButtonSize,
             buttonName = "포즈 추천 버튼",
             buttonText = "포즈",
-            buttonTextColor = LocalColors.current.subPrimaryBlack100,
-            colorTint = LocalColors.current.secondaryWhite100,
+            buttonTextColor = LocalColors.current.textPrimary100,
+            colorTint = LocalColors.current.background100,
             onClick = onRecommendPoseEvent,
             buttonTextSize = 12
         )
@@ -297,7 +283,7 @@ fun ZoomButtonRow(
             .wrapContentSize()
             .background(
                 shape = RoundedCornerShape(100.dp),
-                color = LocalColors.current.subSecondaryGray100.copy(alpha = 0.5F)
+                color = LocalColors.current.textSecondary100.copy(alpha = 0.5F)
             )
             .padding(horizontal = 15.dp, vertical = 10.dp)
     ) {
@@ -354,12 +340,12 @@ fun ClickPoseBtnUnderBar(
     ) {
         val localColor = LocalColors.current
         val sliderBackgroundColor =
-            rememberUpdatedState(newValue = if (is16By9AspectRatio()) localColor.secondaryWhite100 else Color.Unspecified)
+            rememberUpdatedState(newValue = if (is16By9AspectRatio()) localColor.background100 else Color.Unspecified)
         val backgroundColor =
-            rememberUpdatedState(newValue = if (is16By9AspectRatio()) Color.Unspecified else localColor.secondaryWhite100)
+            rememberUpdatedState(newValue = if (is16By9AspectRatio()) Color.Unspecified else localColor.background100)
         val itemTextColor = rememberUpdatedState(
-            newValue = if (is16By9AspectRatio()) localColor.secondaryWhite100
-            else localColor.subPrimaryBlack100
+            newValue = if (is16By9AspectRatio()) localColor.background100
+            else localColor.textPrimary100
         )
 
 
@@ -383,10 +369,10 @@ fun ClickPoseBtnUnderBar(
 
                 Slider(
                     colors = SliderDefaults.colors(
-                        thumbColor = localColor.primaryGreen100,
-                        activeTrackColor = localColor.primaryGreen100,
-                        inactiveTrackColor = localColor.secondaryWhite80,
-                        activeTickColor = localColor.primaryGreen100,
+                        thumbColor = localColor.primaryBlue100,
+                        activeTrackColor = localColor.primaryBlue100,
+                        inactiveTrackColor = localColor.background80,
+                        activeTickColor = localColor.primaryBlue100,
                         inactiveTickColor = Color.Transparent
                     ),
                     modifier = Modifier
@@ -421,7 +407,7 @@ fun ClickPoseBtnUnderBar(
             )
         }
         //포즈 선택 할 수 있는 Row -> 선택된 포즈를 가지고 스케일 변경 진행
-        PoseSelectRow(
+        PoseSelectSlider(
             modifier = Modifier
                 .fillMaxWidth()
                 .drawBehind {
@@ -460,16 +446,20 @@ fun ClickPoseBtnUnderBar(
                 modifier = Modifier.shadow(elevation = 2.dp, shape = CircleShape),
                 buttonName = "포즈 새로고침",
                 innerIconDrawableSize = defaultButtonSize / 3,
-                colorTint = localColor.secondaryWhite100,
+                colorTint = localColor.background100,
                 innerIconDrawableId = R.drawable.refresh,
                 onClick = { onRefreshPoseData() },
                 buttonSize = defaultButtonSize,
-                innerIconColorTint = localColor.subPrimaryBlack100
+                innerIconColorTint = localColor.textPrimary100
             )
         }
     }
-
 }
+
+
+
+
+
 
 @Composable
 fun PoseSelectLowerMenu(
@@ -487,91 +477,7 @@ fun PoseSelectLowerMenu(
 }
 
 
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun PoseSelectRow(
-    modifier: Modifier = Modifier,
-    currentSelectedIdx: () -> Int,
-    inputPosedDataList: () -> List<PoseData>?,
-    onSelectedPoseIndexEvent: (Int) -> Unit,
-    itemTextColor: () -> Color
-) {
-    val scrollState = rememberLazyListState()
-    val nowSelected = rememberUpdatedState(newValue = currentSelectedIdx())
-    val rowWidth = LocalConfiguration.current.screenWidthDp.dp
-    val poseItemSize = DpSize(80.dp, 80.dp)
-    val textSize = 10.dp
-    val flingBehavior = rememberSnapFlingBehavior(SnapLayoutInfoProvider(scrollState))
-    val padding by rememberUpdatedState(newValue = (rowWidth - poseItemSize.width) / 2)
-    val immutableList = rememberUpdatedState(newValue = inputPosedDataList())
 
-    LaunchedEffect(immutableList.value) {
-        scrollState.scrollToItem(nowSelected.value)
-    }
-
-    LaunchedEffect(nowSelected.value) {
-        scrollState.animateScrollToItem(nowSelected.value)
-    }
-    immutableList.value.run {
-        if (this != null) {
-            LazyRow(
-                modifier = modifier,
-                state = scrollState,
-                horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterHorizontally),
-                contentPadding = PaddingValues(
-                    horizontal = padding
-                ),
-                flingBehavior = flingBehavior,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                items(count = this@run.size, key = {
-                    this@run[it].poseId
-                }, itemContent = { idx ->
-                    val poseItem = this@run[idx]
-                    PoseSelectionItem(
-                        modifier = Modifier.size(poseItemSize),
-                        isSelected = idx == nowSelected.value,
-                        imageUri = poseItem.imageUri,
-                        poseIndex = idx,
-                        onClickEvent = {
-                            onSelectedPoseIndexEvent(idx)
-                        },
-                        poseSize = poseItemSize.height - textSize * 2,
-                        textSize = textSize,
-                        itemTextColor = itemTextColor()
-                    )
-                })
-            }
-        } else {
-            Row(
-                modifier = modifier,
-                horizontalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(poseItemSize.height),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    CircularProgressBar()
-                    Text(
-                        text = "포즈 추천 중..",
-                        textAlign = TextAlign.Center,
-                        color = itemTextColor(),
-                        fontFamily = CameraScreenButtons.pretendardFamily,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 10.sp,
-                        modifier = Modifier.padding(top = 5.dp)
-                    )
-                }
-            }
-        }
-    }
-
-
-}
 
 //클릭 할 수 있는 포즈 아이템 카드
 @Composable
@@ -587,8 +493,8 @@ fun PoseSelectionItem(
 ) {
     val colorTheme = LocalColors.current
     val mutableInteractionSource = remember { MutableInteractionSource() }
-    val unSelectedColor = colorTheme.secondaryWhite100
-    val selectedColor = colorTheme.primaryGreen100
+    val unSelectedColor = colorTheme.background100
+    val selectedColor = colorTheme.primaryBlue100
     val stateColor = if (isSelected) selectedColor else unSelectedColor
     val defaultModifier = Modifier
         .padding(2.dp)
@@ -639,7 +545,7 @@ fun PoseSelectionItem(
                                 .size(poseSize / 2),
                             painter = checkedPainter,
                             contentDescription = "",
-                            colorFilter = ColorFilter.tint(color = LocalColors.current.secondaryWhite100)
+                            colorFilter = ColorFilter.tint(color = LocalColors.current.background100)
                         )
                     }
                 }
@@ -653,7 +559,7 @@ fun PoseSelectionItem(
                         painter = painter,
                         contentDescription = "이미지",
                         contentScale = ContentScale.Fit,
-                        colorFilter = ColorFilter.tint(color = LocalColors.current.subPrimaryBlack100)
+                        colorFilter = ColorFilter.tint(color = LocalColors.current.textPrimary100)
                     )
                 }
             }

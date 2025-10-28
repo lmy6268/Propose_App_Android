@@ -79,7 +79,7 @@ class ImageRepositoryImpl @Inject constructor(@ApplicationContext private val ap
                 )
             )
         } else {
-            MediaStore.Images.Media.getBitmap(applicationContext.contentResolver, uri);
+            MediaStore.Images.Media.getBitmap(applicationContext.contentResolver, uri)
         }
 
         backgroundBitmap.copy(Bitmap.Config.RGB_565,true).run {
