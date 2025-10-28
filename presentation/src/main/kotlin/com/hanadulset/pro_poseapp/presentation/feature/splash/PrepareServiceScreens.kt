@@ -41,10 +41,12 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import com.hanadulset.pro_poseapp.core.designsystem.component.CircularProgressBar
+import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
+import com.hanadulset.pro_poseapp.core.designsystem.theme.primaryGreen100
+import com.hanadulset.pro_poseapp.core.designsystem.theme.secondaryWhite100
+import com.hanadulset.pro_poseapp.core.designsystem.theme.subSecondaryGray100
 import com.hanadulset.pro_poseapp.presentation.R
-import com.hanadulset.pro_poseapp.presentation.component.LocalColors
-import com.hanadulset.pro_poseapp.presentation.component.LocalTypography
-import com.hanadulset.pro_poseapp.presentation.component.UIComponents
 import com.hanadulset.pro_poseapp.presentation.core.CustomDialog
 import com.hanadulset.pro_poseapp.utils.camera.CameraState
 import kotlinx.coroutines.delay
@@ -134,8 +136,8 @@ object PrepareServiceScreens {
                     .placeholder(R.drawable.app_icon_rounded_without_background)
                     .build()
             )
-            val style = LocalTypography.current
-            val color = LocalColors.current
+            val style = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography.current
+            val color = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current
             val positionOfTitle = remember { mutableStateOf(Offset.Zero) }
 
             Column(
@@ -207,7 +209,9 @@ object PrepareServiceScreens {
                             }
                         },
                         onDismissRequest = {
-                            if (showUpdateDialog.value!!["mustToUpdate"]!!.toBoolean().not()) onCheckForMoveToNext()
+                            if (showUpdateDialog.value!!["mustToUpdate"]!!.toBoolean()
+                                    .not()
+                            ) onCheckForMoveToNext()
                             else (localContext as Activity).finishAffinity()
                         })
                 }
@@ -291,8 +295,8 @@ object PrepareServiceScreens {
                     .placeholder(R.drawable.app_icon_rounded_without_background)
                     .build()
             )
-            val style = LocalTypography.current
-            val color = LocalColors.current
+            val style = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography.current
+            val color = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors.current
 
             val positionOfTitle = remember {
                 mutableStateOf(Offset.Zero)
@@ -327,7 +331,7 @@ object PrepareServiceScreens {
                         Alignment.CenterVertically
                     )
                 ) {
-                    UIComponents.CircularWaitingBar(
+                    CircularProgressBar(
                         barColor = LocalColors.current.secondaryWhite100,
                         backgroundColor = LocalColors.current.subSecondaryGray100
                     )
