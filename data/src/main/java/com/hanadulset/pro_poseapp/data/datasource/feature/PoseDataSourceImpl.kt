@@ -15,8 +15,6 @@ import com.opencsv.CSVReaderBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import org.opencv.android.Utils
 import org.opencv.core.Core
@@ -32,16 +30,55 @@ import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sqrt
-import kotlin.time.ExperimentalTime
+
+
+
+
+//TODO: 이 데이터 소스의 역할에 대한 함수를 명확히 하고 실제로 사용하는 함수 외에는 노출시키지 않도록 수정한다.
 
 class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSource {
 
     private lateinit var centroid: MutableList<List<Double>>
-    private lateinit var poseRanks:List<List<PoseData>>
+    private lateinit var poseRanks: List<List<PoseData>>
+
+
+    private fun String.getFloatList() = replace("[", "").replace("]", "").split(",").map {
+        it.toFloat()
+    }
+
+    private fun loadPoseData(): List<PoseData> {
+        val result = mutableListOf<PoseData>()
+        val poseImageData = loadPoseImages()
+        val csvParser = CSVParserBuilder().withSeparator(',').build()
+        applicationContext.assets.open(IMAGE_ASSET).use { stream ->
+            val csvReader = CSVReaderBuilder(InputStreamReader(stream)).withCSVParser(csvParser).build()
+            with(csvReader.readAll()) {
+                //첫 줄은 생략하고 시작함.
+                subList(1, size).forEach { str ->
+                    val (center, poseSize) = str.map { it.getFloatList() }
+                    result.add(
+                        PoseData(
+                            poseId = str[0].toInt(),
+                            bottomCenterRate = SizeF(center[0], center[1]),
+                            sizeRate = SizeF(poseSize[0], poseSize[1])
+                        )
+                    )
+                }
+
+                result.sortBy { it.poseId }
+                for (i in result.indices) {
+                    result[i] = result[i].copy(imageUri = poseImageData[i])
+                }
+            }
+        }
+        return result
+
+    }
+
 
     private fun initPoseRankList(): List<List<PoseData>> {
         val poseDataList = mutableListOf<List<PoseData>>()
-        val rankList = applicationContext.assets.open("pose_ranks.csv").use { stream ->
+        val rankList = applicationContext.assets.open(POSE_RANK_ASSET).use { stream ->
             val resMutableList = mutableListOf<List<Double>>()
             CSVReader(InputStreamReader(stream)).forEach { strings ->
                 if (strings[1].equals("pose_ids").not()) {
@@ -55,36 +92,7 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
         }
 
         //저장된 이미지와 데이터를 매핑시킨다.
-        val imageDataList: MutableList<PoseData> = applicationContext.assets.open("image_datas.csv").use { stream ->
-            val resultList = mutableListOf<PoseData>()
-            val imageRes = loadPoseImages()
-            CSVReaderBuilder(InputStreamReader(stream)).withCSVParser(
-                CSVParserBuilder().withSeparator(',').build()
-            ).build().readAll().run {
-                //첫 줄은 생략하고 시작함.
-                this.subList(1, this.size).forEach { strings ->
-                    val center =
-                        strings[1].replace("[", "").replace("]", "").split(",").map {
-                            it.toFloat()
-                        }
-                    val size = strings[2].replace("[", "").replace("]", "").split(",")
-                        .map { it.toFloat() }
-
-                    resultList.add(
-                        PoseData(
-                            poseId = strings[0].toInt(),
-                            bottomCenterRate = SizeF(center[0], center[1]),
-                            sizeRate = SizeF(size[0], size[1])
-                        )
-                    )
-                }
-                resultList.sortBy { it.poseId }
-                for (i in resultList.indices) {
-                    resultList[i] = resultList[i].copy(imageUri = imageRes[i])
-                }
-            }
-            resultList
-        }
+        val imageDataList = loadPoseData()
 
 
         for (idx in rankList.indices) {
@@ -130,7 +138,7 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
     }
 
     private fun initCentroidValue(): MutableList<List<Double>> =
-        applicationContext.assets.open("centroids.csv").use { stream ->
+        applicationContext.assets.open(CENTROID_ASSET).use { stream ->
             val resMutableList = mutableListOf<List<Double>>()
             CSVReader(InputStreamReader(stream)).forEach {
                 //앞에 라벨 번호가 있는 것들만 데이터를 가져와보자
@@ -153,16 +161,12 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
         val resizedImageMat = Mat(image.width, image.height, CvType.CV_8UC3)
         Utils.bitmapToMat(image, resizedImageMat)
         Imgproc.cvtColor(
-            resizedImageMat,
-            resizedImageMat,
-            Imgproc.COLOR_RGBA2RGB
+            resizedImageMat, resizedImageMat, Imgproc.COLOR_RGBA2RGB
         ) //알파값을 빼고 저장
         Imgproc.resize(resizedImageMat, resizedImageMat, HogConfig.imageResize)
         //10.01 추가
         Imgproc.medianBlur(
-            resizedImageMat,
-            resizedImageMat,
-            HogConfig.blurSize.width.toInt()
+            resizedImageMat, resizedImageMat, HogConfig.blurSize.width.toInt()
         )
         resizedImageMat
     }
@@ -190,12 +194,10 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
         val histCnt = (imageResizeConfig / cellSizeConfig).pow(2).toInt()
         val binCnt = 9
         val reshapedAHog =
-            reshapeList(aHog, listOf(histCnt, binCnt)).toMutableList()
-                .apply { addZDimension(this) }
-        val reshapedBHog =
-            reshapeList(bHog, listOf(histCnt, binCnt)).toMutableList().apply {
-                addZDimension(this)
-            }
+            reshapeList(aHog, listOf(histCnt, binCnt)).toMutableList().apply { addZDimension(this) }
+        val reshapedBHog = reshapeList(bHog, listOf(histCnt, binCnt)).toMutableList().apply {
+            addZDimension(this)
+        }
         return calculateDistance(reshapedAHog, reshapedBHog)
     }
 
@@ -238,8 +240,7 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
     }
 
     override fun reshapeList(
-        inputList: List<Double>,
-        newShape: List<Int>
+        inputList: List<Double>, newShape: List<Int>
     ): List<List<Double>> {
         val totalElements = inputList.size
         val newTotalElements = newShape.reduce { acc, i -> acc * i }
@@ -339,7 +340,6 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
     }
 
 
-    @OptIn(ExperimentalTime::class)
     override suspend fun getHistogramMap(backgroundBitmap: Bitmap): Mat {
         //이미지
 //        Log.d("ASDF1",System.currentTimeMillis().toString())
@@ -377,10 +377,8 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
 
 //        Log.d("ASDF7",System.currentTimeMillis().toString())
         //변수 초기화 -> 모든 칸의 값을 0으로 초기화하여 진행한다.
-        val resMagnitude =
-            Mat.zeros(resizedImage.width(), resizedImage.height(), CvType.CV_64FC1)
-        val resOrientation =
-            Mat.zeros(resizedImage.width(), resizedImage.height(), CvType.CV_64FC1)
+        val resMagnitude = Mat.zeros(resizedImage.width(), resizedImage.height(), CvType.CV_64FC1)
+        val resOrientation = Mat.zeros(resizedImage.width(), resizedImage.height(), CvType.CV_64FC1)
         val cnt = Mat.zeros(resizedImage.width(), resizedImage.height(), CvType.CV_8UC1)
 
 
@@ -393,14 +391,10 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
                 for (col in 0 until magnitude.cols()) {
                     if (magnitude[row, col][0] != 0.0) {
                         resMagnitude.put(
-                            row,
-                            col,
-                            resMagnitude.get(row, col)[0] + magnitude[row, col][0]
+                            row, col, resMagnitude.get(row, col)[0] + magnitude[row, col][0]
                         )
                         resOrientation.put(
-                            row,
-                            col,
-                            resOrientation[row, col][0] + orientation[row, col][0]
+                            row, col, resOrientation[row, col][0] + orientation[row, col][0]
                         )
                         cnt.put(row, col, cnt[row, col][0] + 1)
                     }
@@ -442,8 +436,7 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
 //        Log.d("ASDF12",System.currentTimeMillis().toString())
         val arrayList = ArrayList<Double>()
         for (row in 0 until cnt.rows()) {
-            for (col in 0 until cnt.cols())
-                arrayList.add(resMagnitude[row, col][0])
+            for (col in 0 until cnt.cols()) arrayList.add(resMagnitude[row, col][0])
         }
 //        Log.d("ASDF13",System.currentTimeMillis().toString())
 
@@ -492,8 +485,7 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
                     val value = histogramMap[row, col][index]
                     if (value == 1.0) {
                         //angleMap에 데이터가 저장됨
-                        angleMap[row * histogramMap.rows() + col] =
-                            index * 180.0 / HogConfig.nBins
+                        angleMap[row * histogramMap.rows() + col] = index * 180.0 / HogConfig.nBins
                         break
                     }
                 }
@@ -546,7 +538,6 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
 
 
     companion object {
-
         object HogConfig {
             val imageResize: Size = Size(128.0, 128.0)
             const val imageConvert: Int =
@@ -557,6 +548,9 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
             const val nBins: Int = 12 //11.18 수정
         }
 
+        const val IMAGE_ASSET = "image_datas.csv"
+        const val CENTROID_ASSET = "centroids.csv"
+        const val POSE_RANK_ASSET = "pose_ranks.csv"
         const val SILHOUETTE_IMAGE_ZIP = "silhouette_image.zip"
 
     }
