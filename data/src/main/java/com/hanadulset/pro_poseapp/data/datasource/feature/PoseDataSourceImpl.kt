@@ -12,9 +12,7 @@ import com.hanadulset.pro_poseapp.utils.pose.PoseDataResult
 import com.opencsv.CSVParserBuilder
 import com.opencsv.CSVReader
 import com.opencsv.CSVReaderBuilder
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import org.opencv.android.Utils
 import org.opencv.core.Core
@@ -32,8 +30,6 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 
-
-
 //TODO: 이 데이터 소스의 역할에 대한 함수를 명확히 하고 실제로 사용하는 함수 외에는 노출시키지 않도록 수정한다.
 
 class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSource {
@@ -42,37 +38,56 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
     private lateinit var poseRanks: List<List<PoseData>>
 
 
-    private fun String.getFloatList() = replace("[", "").replace("]", "").split(",").map {
-        it.toFloat()
+    override suspend fun recommendPose(backgroundBitmap: Bitmap): PoseDataResult =
+        withContext(Dispatchers.Default) {
+            val histogramMap = getHistogramMap(backgroundBitmap)
+            val angle = getAngleFromHog(histogramMap)
+            val backgroundId =
+                (0 until centroid.size - 2).minByOrNull { getDistance(angle, it) } ?: -1
+
+            PoseDataResult(
+                poseDataList = poseRanks[backgroundId].toMutableList(),
+                backgroundId = backgroundId,
+                backgroundAngleList = angle
+            )
+        }
+
+
+    private fun String.getFloatList(): List<Float> {
+        return this.replace("[", "").replace("]", "").split(",").map { it.trim().toFloat() }
     }
 
     private fun loadPoseData(): List<PoseData> {
         val result = mutableListOf<PoseData>()
         val poseImageData = loadPoseImages()
         val csvParser = CSVParserBuilder().withSeparator(',').build()
-        applicationContext.assets.open(IMAGE_ASSET).use { stream ->
-            val csvReader = CSVReaderBuilder(InputStreamReader(stream)).withCSVParser(csvParser).build()
-            with(csvReader.readAll()) {
-                //첫 줄은 생략하고 시작함.
-                subList(1, size).forEach { str ->
-                    val (center, poseSize) = str.map { it.getFloatList() }
-                    result.add(
-                        PoseData(
-                            poseId = str[0].toInt(),
-                            bottomCenterRate = SizeF(center[0], center[1]),
-                            sizeRate = SizeF(poseSize[0], poseSize[1])
-                        )
-                    )
-                }
 
-                result.sortBy { it.poseId }
-                for (i in result.indices) {
-                    result[i] = result[i].copy(imageUri = poseImageData[i])
-                }
+        applicationContext.assets.open(IMAGE_ASSET).use { stream ->
+            val csvReader =
+                CSVReaderBuilder(InputStreamReader(stream)).withCSVParser(csvParser).build()
+
+            val rows = csvReader.readAll()
+            rows.subList(1, rows.size).forEach { str ->
+                val poseId = str[0].toInt()
+                val center = str[1].getFloatList()
+                val poseSize = str[2].getFloatList()
+
+                result.add(
+                    PoseData(
+                        poseId = poseId,
+                        bottomCenterRate = SizeF(center[0], center[1]),
+                        sizeRate = SizeF(poseSize[0], poseSize[1])
+                    )
+                )
+            }
+
+            result.sortBy { it.poseId }
+            result.forEachIndexed { i, pose ->
+                if (i < poseImageData.size) result[i] = pose.copy(imageUri = poseImageData[i])
             }
         }
-        return result
 
+        return result
     }
 
 
@@ -106,33 +121,7 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
     }
 
 
-    override suspend fun recommendPose(backgroundBitmap: Bitmap): PoseDataResult {
-        val histogramMap = withContext(Dispatchers.Default) {
-            getHistogramMap(backgroundBitmap)
-        }
-
-        val angle = withContext(Dispatchers.Default) {
-            getAngleFromHog(histogramMap)
-        }
-
-        return CoroutineScope(Dispatchers.Default).async {
-            var res = Pair(-1, java.lang.Double.POSITIVE_INFINITY)
-            for (i in 0 until centroid.size - 2) {
-                val calculatedDistance = getDistance(angle, i)
-                if (res.second > calculatedDistance) res =
-                    res.copy(first = i, second = calculatedDistance)
-            }
-            val backgroundId = res.first //백그라운드 클러스터 ID
-            val poseDataResult = PoseDataResult(
-                poseDataList = poseRanks[backgroundId].toMutableList(),
-                backgroundId = backgroundId,
-                backgroundAngleList = angle
-            )
-            poseDataResult
-        }.await()
-    }
-
-    override fun preparePoseData() {
+    fun preparePoseData() {
         poseRanks = initPoseRankList()
         centroid = initCentroidValue()
     }
@@ -157,7 +146,7 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
         }
 
 
-    override suspend fun preProcessing(image: Bitmap): Mat = withContext(Dispatchers.Default) {
+    private suspend fun preProcessing(image: Bitmap): Mat = withContext(Dispatchers.Default) {
         val resizedImageMat = Mat(image.width, image.height, CvType.CV_8UC3)
         Utils.bitmapToMat(image, resizedImageMat)
         Imgproc.cvtColor(
@@ -171,7 +160,7 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
         resizedImageMat
     }
 
-    override fun getDistance(angle: List<Double>, centroidIdx: Int): Double {
+    private fun getDistance(angle: List<Double>, centroidIdx: Int): Double {
         val weight = 50.0
         val centroidGHog = centroid[centroidIdx]
         val distanceHog = distanceAngle(angle, centroidGHog)
@@ -179,7 +168,7 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
     }
 
 
-    override fun distanceAngle(aAngle: List<Double>, bAngle: List<Double>): Double {
+    private fun distanceAngle(aAngle: List<Double>, bAngle: List<Double>): Double {
         var distance = 0.0
         for (idx in aAngle.indices) {
             distance += if ((aAngle[idx] == -1.0 && bAngle[idx] != -1.0) || (aAngle[idx] != -1.0 && bAngle[idx] == -1.0)) 1.0
@@ -188,7 +177,7 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
         return distance
     }
 
-    override fun distanceHog(aHog: List<Double>, bHog: List<Double>): Double {
+    private fun distanceHog(aHog: List<Double>, bHog: List<Double>): Double {
         val imageResizeConfig = 128.0
         val cellSizeConfig = 16.0
         val histCnt = (imageResizeConfig / cellSizeConfig).pow(2).toInt()
@@ -201,7 +190,7 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
         return calculateDistance(reshapedAHog, reshapedBHog)
     }
 
-    override fun addZDimension(arr: MutableList<List<Double>>) {
+    private fun addZDimension(arr: MutableList<List<Double>>) {
         val arrShape = arr.size
         val zeroArr = List(arrShape) { 0.0 }
         val normArr = MutableList(arrShape) { 0.0 }
@@ -223,7 +212,7 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
         arr.addAll(arrConcat)
     }
 
-    override fun calculateDistance(a: List<List<Double>>, b: List<List<Double>>): Double {
+    private fun calculateDistance(a: List<List<Double>>, b: List<List<Double>>): Double {
         require(a.size == b.size && a.isNotEmpty()) { "Input lists must have the same non-empty size." }
 
         val numElements = a.size * a[0].size
@@ -239,7 +228,7 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
         return sqrt(diffSquaredSum) / numElements
     }
 
-    override fun reshapeList(
+    fun reshapeList(
         inputList: List<Double>, newShape: List<Int>
     ): List<List<Double>> {
         val totalElements = inputList.size
@@ -258,32 +247,25 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
         return result
     }
 
-    override suspend fun getGradient(targetImage: Mat): Pair<Mat, Mat> {
-        var gradientX = Mat(targetImage.size(), targetImage.type())
-        var gradientY = Mat(targetImage.size(), targetImage.type())
+    private fun setGradient(mat: Mat) = with(mat) {
+        val zeroMat = Mat.zeros(size(), this.type())
+        val absMat = Mat(this.size(), this.type())
+        Core.absdiff(this, zeroMat, absMat)//abs값으로 변환
+        val std = Core.minMaxLoc(absMat)
+        val dv = if (std.maxVal != 0.0) std.maxVal else 1.0
+        Core.divide(this, Scalar(dv), this)
+        Core.multiply(this, Scalar(255.0), this)
+    }
+
+    fun getGradient(targetImage: Mat): Pair<Mat, Mat> {
+        val gradientX = Mat(targetImage.size(), targetImage.type())
+        val gradientY = Mat(targetImage.size(), targetImage.type())
 
         Imgproc.Sobel(targetImage, gradientX, CvType.CV_64F, 1, 0, 3)
         Imgproc.Sobel(targetImage, gradientY, CvType.CV_64F, 0, 1, 3)
 
-        gradientX = gradientX.apply {
-            val zeroMat = Mat.zeros(this.size(), this.type())
-            val absMat = Mat(this.size(), this.type())
-            Core.absdiff(this, zeroMat, absMat)//abs값으로 변환
-            val std = Core.minMaxLoc(absMat)
-            val dv = if (std.maxVal != 0.0) std.maxVal else 1.0
-            Core.divide(this, Scalar(dv), this)
-            Core.multiply(this, Scalar(255.0), this)
-        }
-        gradientY = gradientY.apply {
-            val zeroMat = Mat.zeros(this.size(), this.type())
-            val absMat = Mat(this.size(), this.type())
-            Core.absdiff(this, zeroMat, absMat)//abs값으로 변환
-            val std = Core.minMaxLoc(absMat)
-            val dv = if (std.maxVal != 0.0) std.maxVal else 1.0
-            Core.divide(this, Scalar(dv), this)
-            Core.multiply(this, Scalar(255.0), this)
-        }
-
+        setGradient(gradientX)
+        setGradient(gradientY)
 
         val gradientMagnitude = Mat(gradientX.size(), gradientX.type()).apply {
             val tmpY = Mat(gradientY.size(), gradientY.type())
@@ -310,7 +292,7 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
         return Pair(gradientMagnitude, gradientOrientation)
     }
 
-    override suspend fun getHistogram(magnitude: Mat, orientation: Mat): DoubleArray {
+    fun getHistogram(magnitude: Mat, orientation: Mat): DoubleArray {
         val maxDegree = 180.0
         val diff = maxDegree / HogConfig.nBins
         var histogram = DoubleArray(HogConfig.nBins)
@@ -340,7 +322,7 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
     }
 
 
-    override suspend fun getHistogramMap(backgroundBitmap: Bitmap): Mat {
+    suspend fun getHistogramMap(backgroundBitmap: Bitmap): Mat {
         //이미지
 //        Log.d("ASDF1",System.currentTimeMillis().toString())
         val resizedImage = preProcessing(backgroundBitmap)
@@ -475,7 +457,7 @@ class PoseDataSourceImpl(private val applicationContext: Context) : PoseDataSour
         return histogramMap
     }
 
-    override fun getAngleFromHog(histogramMap: Mat): List<Double> {
+    fun getAngleFromHog(histogramMap: Mat): List<Double> {
         val angleMap = MutableList(histogramMap.rows() * histogramMap.cols()) { -1.0 }
 
         for (row in 0 until histogramMap.rows()) {
