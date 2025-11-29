@@ -6,5 +6,5 @@ import com.hanadulset.pro_poseapp.domain.repository.ImageRepository
 import javax.inject.Inject
 
 class GetPoseFromImageUseCase @Inject constructor(private val imageRepository: ImageRepository) {
-    operator fun invoke(uri: Uri?) = imageRepository.getPoseFromImage(uri)
+    suspend operator fun invoke(uri: Uri?) = imageRepository.getPoseFromImage(uri)
 }
