@@ -36,8 +36,11 @@ import com.hanadulset.pro_poseapp.utils.camera.ViewRate
 import com.hanadulset.pro_poseapp.utils.eventlog.CaptureEventData
 import com.hanadulset.pro_poseapp.utils.pose.PoseData
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -64,6 +67,35 @@ class CameraViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _trackingSwitchON = MutableStateFlow(false)
+    private val _trackingTrigger = Channel<Unit>(Channel.CONFLATED)
+
+    init {
+        viewModelScope.launch {
+            _trackingTrigger.receiveAsFlow().conflate().collect {
+                if (_trackingSwitchON.value && _modifiedPointState.value != null) {
+                    val backgroundBitmap = _bitmapState.value ?: return@collect
+                    //이미지 사용하기
+                    val analyzedImageSize = Size(backgroundBitmap.width, backgroundBitmap.height)
+                    val res = updatePointOffsetUseCase(
+                        targetOffset = convertAnalyzedOffsetToPreviewOffset(
+                            reversed = true, offset = SizeF(
+                                _modifiedPointState.value!!.x, _modifiedPointState.value!!.y
+                            ), analyzedImageSize = analyzedImageSize
+                        ), backgroundBitmap = backgroundBitmap
+                    )
+                    if (res == null) {
+                        stopToTrack() //만약 에러인 경우 추적을 그만함.
+                    } else {
+                        _modifiedPointState.update {
+                            convertAnalyzedOffsetToPreviewOffset(
+                                false, res, analyzedImageSize = analyzedImageSize
+                            ).let { Offset(it.width, it.height) }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     private val viewRateList = listOf(
         ViewRate(
@@ -198,27 +230,7 @@ class CameraViewModel @Inject constructor(
     private fun trackToNewOffset() {
         //구도 추천 로직
         if (_trackingSwitchON.value && _modifiedPointState.value != null) {
-            val backgroundBitmap = _bitmapState.value!!
-            //이미지 사용하기
-            val analyzedImageSize = Size(backgroundBitmap.width, backgroundBitmap.height)
-            viewModelScope.launch {
-                val res = updatePointOffsetUseCase(
-                    targetOffset = convertAnalyzedOffsetToPreviewOffset(
-                        reversed = true, offset = SizeF(
-                            _modifiedPointState.value!!.x, _modifiedPointState.value!!.y
-                        ), analyzedImageSize = analyzedImageSize
-                    ), backgroundBitmap = backgroundBitmap
-                )
-                if (res == null) {
-                    stopToTrack() //만약 에러인 경우 추적을 그만함.
-                } else {
-                    _modifiedPointState.update {
-                        convertAnalyzedOffsetToPreviewOffset(
-                            false, res, analyzedImageSize = analyzedImageSize
-                        ).let { Offset(it.width, it.height) }
-                    }
-                }
-            }
+            _trackingTrigger.trySend(Unit)
         }
     }
 
@@ -272,10 +284,10 @@ class CameraViewModel @Inject constructor(
     }
 
     fun getPoseFromImage(uri: Uri) {
-        _fixedScreenState.value = null
-        val res = getPoseFromImageUseCase(uri)
-        _fixedScreenState.value = res
         viewModelScope.launch {
+            _fixedScreenState.value = null
+            val res = getPoseFromImageUseCase(uri)
+            _fixedScreenState.value = res
             Log.d("따오기 이미지: ", uri.toString())
             deleteImageFromPicturesUseCase(uri)
         }

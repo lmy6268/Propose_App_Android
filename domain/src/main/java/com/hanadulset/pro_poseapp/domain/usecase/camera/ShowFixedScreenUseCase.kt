@@ -9,7 +9,7 @@ import javax.inject.Inject
 class ShowFixedScreenUseCase @Inject constructor(
     private val imageRepository: ImageRepository,
 ) {
-    operator fun invoke(
+    suspend operator fun invoke(
         backgroundBitmap: Bitmap
     ) = imageRepository.getFixedScreen(backgroundBitmap)
 

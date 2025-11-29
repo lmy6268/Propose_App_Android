@@ -21,8 +21,6 @@ import java.util.Locale
 
 
 class FileHandleDataSourceImpl(private val context: Context) : FileHandleDataSource {
-
-
     override suspend fun saveImageToGallery(bitmap: Bitmap): Uri =
         withContext(Dispatchers.IO) {
             val sdf = System.currentTimeMillis()
@@ -40,6 +38,7 @@ class FileHandleDataSourceImpl(private val context: Context) : FileHandleDataSou
                     uri = it
                     context.contentResolver.openOutputStream(it)
                 }?.use { bitmap.compress(Bitmap.CompressFormat.JPEG, 80, it) }
+
             //이하 버전에서는 문제가 없음
             else {
                 Environment.getExternalStoragePublicDirectory(PROPOSE_PATH).run {
