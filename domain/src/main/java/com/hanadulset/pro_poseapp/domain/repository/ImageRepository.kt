@@ -16,10 +16,10 @@ interface ImageRepository {
         backgroundBitmap: Bitmap
     ): PoseDataResult //추천된 포즈데이터 반환하기
 
-    fun getFixedScreen(backgroundBitmap: Bitmap): Bitmap // 고정 화면을 보여줌
+    suspend fun getFixedScreen(backgroundBitmap: Bitmap): Bitmap // 고정 화면을 보여줌
     suspend fun getLatestImage(): Uri?
     suspend fun preRunModel(): Boolean
-    fun getPoseFromImage(uri: Uri?): Bitmap?
+    suspend fun getPoseFromImage(uri: Uri?): Bitmap?
     suspend fun loadAllCapturedImages(): List<ImageResult>
     suspend fun deleteCapturedImage(uri: Uri): Boolean
 
