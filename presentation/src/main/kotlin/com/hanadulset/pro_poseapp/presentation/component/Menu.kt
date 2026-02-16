@@ -71,8 +71,6 @@ fun SettingBoxItem(
     innerTextSize: Dp = 23.dp,
     onClick: (() -> Unit)? = null
 ) {
-
-
     val mutableInteractionSource = remember { MutableInteractionSource() }
     Box(
         modifier = modifier

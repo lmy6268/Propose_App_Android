@@ -34,7 +34,7 @@ class CameraDataSourceImpl(private val context: Context) : CameraDataSource {
     private lateinit var imageAnalysis: ImageAnalysis
     private val executor by lazy { ContextCompat.getMainExecutor(context) }
 
-    private var isOPENCVInit: Boolean = false
+
 
     private lateinit var camera: Camera
     private lateinit var cameraProvider: ProcessCameraProvider
@@ -48,9 +48,7 @@ class CameraDataSourceImpl(private val context: Context) : CameraDataSource {
         aspectRatio: Int,
         previewRotation: Int,
         analyzer: Analyzer
-    ): CameraState = suspendCoroutine { cont ->
-        if (!isOPENCVInit) isOPENCVInit = OpenCVLoader.initLocal()
-
+    ): CameraState = suspendCancellableCoroutine { cont ->
         prepareCamera(
             lifecycleOwner,
             surfaceProvider,

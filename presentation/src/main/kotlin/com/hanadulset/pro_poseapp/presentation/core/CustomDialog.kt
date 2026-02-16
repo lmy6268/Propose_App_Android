@@ -14,25 +14,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.hanadulset.pro_poseapp.presentation.R
 import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
+import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography
+import com.hanadulset.pro_poseapp.presentation.R
 import kotlin.math.roundToInt
 
 object CustomDialog {
@@ -42,29 +40,21 @@ object CustomDialog {
         dialogTitle: String,
         subTitle: String,
         subTitleAdd: String = "",
-        dismissText: String = "취소",
-        confirmText: String = "확인",
+        dismissText: String = stringResource(id = R.string.cancel),
+        confirmText: String = stringResource(id = R.string.ok),
         onDismissRequest: () -> Unit,
         onConfirmRequest: () -> Unit
     ) {
-        val pretendardFamily = FontFamily(
-            Font(R.font.pretendard_bold, FontWeight.Bold, FontStyle.Normal),
-            Font(R.font.pretendard_light, FontWeight.Light, FontStyle.Normal),
+        val typography = LocalTypography.current
+        val colors = LocalColors.current
+
+        val mainStyle = typography.heading02.copy(
+            textAlign = TextAlign.Start
         )
-        val mainStyle = TextStyle(
-            lineHeight = 32.sp,
-            fontWeight = FontWeight.Bold,
-            fontSize = 18.sp,
-            fontFamily = pretendardFamily
-        )
-        val subStyle = TextStyle(
-            lineHeight = 10.sp,
-            fontWeight = FontWeight.Light,
-            fontSize = 12.sp,
-            fontFamily = pretendardFamily
+        val subStyle = typography.sub02.copy(
+            textAlign = TextAlign.Start
         )
         val buttonSize = DpSize(150.dp, 55.dp)
-
 
         Surface(
             modifier = modifier.wrapContentSize(),
@@ -84,7 +74,7 @@ object CustomDialog {
                     text = subTitle, style = subStyle
                 )
                 Spacer(modifier = Modifier.height(10.dp))
-                if (subTitleAdd != "") {
+                if (subTitleAdd.isNotEmpty()) {
                     Text(
                         text = subTitleAdd, style = subStyle
                     )
@@ -97,25 +87,21 @@ object CustomDialog {
                     DialogButton(
                         buttonText = dismissText,
                         buttonSize = buttonSize,
-                        backgroundColor = LocalColors.current.background100,
-                        fontFamily = pretendardFamily,
-                        fontWeight = FontWeight.Light,
+                        backgroundColor = colors.background100,
+                        textStyle = typography.sub01.copy(fontWeight = FontWeight.Light),
                         onClick = onDismissRequest
                     )
                     DialogButton(
                         buttonText = confirmText,
                         buttonSize = buttonSize,
-                        backgroundColor = LocalColors.current.primaryBlue100,
-                        fontFamily = pretendardFamily,
-                        fontWeight = FontWeight.Bold,
+                        backgroundColor = colors.primaryBlue100,
+                        textStyle = typography.sub01.copy(fontWeight = FontWeight.Bold),
                         onClick = onConfirmRequest
                     )
-
                 }
             }
         }
     }
-
 
     @Composable
     private fun DialogButton(
@@ -123,8 +109,7 @@ object CustomDialog {
         buttonText: String,
         buttonSize: DpSize,
         backgroundColor: Color,
-        fontWeight: FontWeight = FontWeight.Light,
-        fontFamily: FontFamily,
+        textStyle: TextStyle,
         onClick: () -> Unit
     ) {
         Surface(
@@ -141,13 +126,12 @@ object CustomDialog {
                     .clickable(onClick = onClick), contentAlignment = Alignment.Center
             ) {
                 Text(
-                    buttonText, style = TextStyle(
-                        fontWeight = fontWeight, fontSize = 13.sp, fontFamily = fontFamily
-                    ), textAlign = TextAlign.Center
+                    buttonText,
+                    style = textStyle,
+                    textAlign = TextAlign.Center
                 )
             }
         }
-
     }
 
     @Composable
@@ -158,12 +142,19 @@ object CustomDialog {
         onConfirmRequest: () -> Unit,
         onDismissRequest: () -> Unit
     ) {
+        val actionText = stringResource(
+            id = if (isDownload) R.string.download_action_download else R.string.download_action_update
+        )
+        val sizeMb = (totalSize / 1e+6).roundToInt()
+
         CustomAlertDialog(
             modifier = modifier,
-            dialogTitle = "추가 리소스를 ${if (isDownload) "다운로드" else "업데이트"} 해야합니다.\n" + "진행 하시겠습니까? ( ${(totalSize / 1e+6).roundToInt()} MB )",
-            subTitle = "모바일 네트워크 이용시, 데이터 요금이 부과될 수 있습니다.",
-            dismissText = if (isDownload) "앱 종료" else "다음에 받기",
-            confirmText = "확인",
+            dialogTitle = stringResource(id = R.string.download_title_format, actionText, sizeMb),
+            subTitle = stringResource(id = R.string.download_subtitle),
+            dismissText = stringResource(
+                id = if (isDownload) R.string.download_dismiss_exit else R.string.download_dismiss_later
+            ),
+            confirmText = stringResource(id = R.string.ok),
             onDismissRequest = onDismissRequest,
             onConfirmRequest = onConfirmRequest
         )
@@ -171,45 +162,42 @@ object CustomDialog {
 
     @Composable
     fun InternetConnectionDialog(
-        modifier: Modifier,
+        modifier: Modifier = Modifier,
         onConfirmRequest: () -> Unit,
         onDismissRequest: () -> Unit
     ) {
         CustomAlertDialog(
             modifier = modifier,
-            dialogTitle = "리소스 서버에 연결할 수 없습니다.",
-            subTitle = "인터넷 설정을 확인해주세요.",
-            subTitleAdd = "인터넷에 연결되어있는 경우, 다시 한번 시도해주세요.",
-            dismissText = "설정하러 가기",
-            confirmText = "다시 시도하기",
+            dialogTitle = stringResource(id = R.string.internet_error_title),
+            subTitle = stringResource(id = R.string.internet_error_subtitle),
+            subTitleAdd = stringResource(id = R.string.internet_error_subtitle_add),
+            dismissText = stringResource(id = R.string.go_to_settings),
+            confirmText = stringResource(id = R.string.retry),
             onDismissRequest = onDismissRequest,
             onConfirmRequest = onConfirmRequest
         )
     }
-
 
     @Composable
     fun AppUpdateDialog(
-        modifier: Modifier,
+        modifier: Modifier = Modifier,
         noticeText: String,
         mustUpdate: Boolean,
-        versionName:String,
+        versionName: String,
         onConfirmRequest: () -> Unit,
         onDismissRequest: () -> Unit
     ) {
         CustomAlertDialog(
             modifier = modifier,
-            dialogTitle = "앱 업데이트 안내",
-            subTitle = "새로운 버전 ($versionName) 이 출시되었습니다.",
+            dialogTitle = stringResource(id = R.string.update_title),
+            subTitle = stringResource(id = R.string.update_subtitle_format, versionName),
             subTitleAdd = noticeText,
-            dismissText = if (mustUpdate) "종료" else "나중에",
-            confirmText = "앱 업데이트",
+            dismissText = stringResource(id = if (mustUpdate) R.string.close else R.string.later),
+            confirmText = stringResource(id = R.string.update_action_confirm),
             onDismissRequest = onDismissRequest,
             onConfirmRequest = onConfirmRequest
         )
     }
-
-
 }
 
 @Preview(showSystemUi = true)
