@@ -10,6 +10,9 @@ pluginManagement {
         }
         mavenCentral()
         gradlePluginPortal()
+        flatDir {
+            dirs(rootDir.resolve("libs"))
+        }
     }
 }
 
@@ -20,6 +23,9 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        flatDir {
+            dirs(rootDir.resolve("libs"))
+        }
     }
 
 }

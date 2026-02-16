@@ -19,7 +19,8 @@ dependencies {
     implementation(projects.utils)
     implementation(projects.opencv)
 
-    implementation(libs.bundles.pytorch)
+    implementation(libs.pytorch.androidLite) { artifact { type = "aar" } }
+    implementation(libs.pytorch.androidTorchVision) { artifact { type = "aar" } }
     implementation(libs.bundles.cameraX)
     implementation(libs.bundles.aws.s3)
 

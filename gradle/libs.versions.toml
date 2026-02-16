@@ -144,8 +144,8 @@ ossLicenses = { module = "com.google.android.gms:play-services-oss-licenses", ve
 spotify-ruler = { group = "com.spotify.ruler", name = "ruler-gradle-plugin", version.ref = "spotify-ruler" }
 pose-detection-accurate = { module = "com.google.mlkit:pose-detection-accurate", version.ref = "poseDetectionAccurate" }
 #Pytorch
-pytorch-androidLite = { group = "org.pytorch", name = "pytorch_android_lite", version.ref = "pytorch-android" }
-pytorch-androidTorchVision = { group = "org.pytorch", name = "pytorch_android_torchvision_lite", version.ref = "pytorch-android" }
+pytorch-androidLite = { group = "org.pytorch", name = "pytorch_android-release", version.ref = "pytorch-android" }
+pytorch-androidTorchVision = { group = "org.pytorch", name = "pytorch_android_torchvision-release", version.ref = "pytorch-android" }
 
 # Dependencies of the included build-logic
 android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "androidGradlePlugin" }
