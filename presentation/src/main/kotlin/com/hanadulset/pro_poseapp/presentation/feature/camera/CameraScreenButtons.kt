@@ -28,14 +28,14 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
 import androidx.compose.material.ripple.LocalRippleTheme
 import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material.ripple.RippleTheme
 import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -73,8 +73,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
 import com.hanadulset.pro_poseapp.presentation.R
-import com.hanadulset.pro_poseapp.presentation.component.LocalColors
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenButtons.SwitchableButton
 
 object CameraScreenButtons {
@@ -111,8 +111,8 @@ object CameraScreenButtons {
         modifier: Modifier = Modifier,
         buttonSize: Dp = 30.dp,
         buttonStatus: Boolean,
-        activatedColor: Color = LocalColors.current.primaryGreen100,
-        inActivatedColor: Color = LocalColors.current.subSecondaryGray80,
+        activatedColor: Color = LocalColors.current.primaryBlue100,
+        inActivatedColor: Color = LocalColors.current.textSecondary80,
         buttonDescription: String = "버튼",
         buttonText: String = "",
         buttonTextColor: Color = Color.White,
@@ -172,8 +172,8 @@ object CameraScreenButtons {
         defaultButtonSize: Dp,
         buttonValue: Int,
         selectedButtonScale: Float = 2F,
-        selectedButtonColor: Color = LocalColors.current.subPrimaryBlack100,
-        unSelectedButtonColor: Color = LocalColors.current.secondaryWhite100,
+        selectedButtonColor: Color = LocalColors.current.textPrimary100,
+        unSelectedButtonColor: Color = LocalColors.current.background100,
         onClickEvent: () -> Unit
     ) {
         val mutableInteractionSource = remember { MutableInteractionSource() }
@@ -203,7 +203,7 @@ object CameraScreenButtons {
                 modifier = Modifier.align(Alignment.Center),
                 text = if (selected) "${buttonValue}X" else buttonValue.toString(),
                 fontSize = 10.sp,
-                color = if (selected) LocalColors.current.primaryGreen100 else LocalColors.current.subPrimaryBlack100,
+                color = if (selected) LocalColors.current.primaryBlue100 else LocalColors.current.textPrimary100,
                 fontFamily = pretendardFamily,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Light
 
@@ -231,7 +231,7 @@ object CameraScreenButtons {
         val animatePosition =
             animateFloatAsState(
                 targetValue = if (switchON.value) with(LocalDensity.current) { (buttonSize.width - thumbRadius - gapBetweenThumbAndTrackEdge).toPx() }
-            else with(LocalDensity.current) { (thumbRadius + gapBetweenThumbAndTrackEdge).toPx() },
+                else with(LocalDensity.current) { (thumbRadius + gapBetweenThumbAndTrackEdge).toPx() },
                 label = ""
             )
         Column(modifier) {
@@ -285,47 +285,40 @@ object CameraScreenButtons {
         fixedBtnStatus: Boolean,
     ) {
         val isFixedBtnPressed by rememberUpdatedState(newValue = fixedBtnStatus)
-
+//        val fixedVector =
         val fixedBtnImage = if (isFixedBtnPressed) R.drawable.fixbutton_fixed
         else R.drawable.fixbutton_unfixed
 
-        val activatedColor = LocalColors.current.primaryGreen100
-        val inActivatedColor = LocalColors.current.subSecondaryGray100
+        val activatedColor = LocalColors.current.primaryBlue100
+        val inActivatedColor = LocalColors.current.textSecondary100
 
 
+        val mutableInteractionSource = remember { MutableInteractionSource() }
 
-        CompositionLocalProvider(LocalRippleTheme provides LocalButtonRippleTheme.apply {
-            setRippleEffect(
-                defaultColor = if (isFixedBtnPressed) activatedColor
-                else inActivatedColor, alphaColor = Color.Black
+        Surface(
+            modifier = modifier
+                .wrapContentSize()
+                .clickable(
+                    indication = rememberRipple(
+                        color = if (isFixedBtnPressed) activatedColor.compositeOver(
+                            Color.Black
+                        )
+                        else inActivatedColor.compositeOver(Color.Black),
+                        bounded = true,
+                        radius = buttonSize / 2
+                    ), //Ripple 효과 제거
+                    interactionSource = mutableInteractionSource,
+                    onClick = {
+                        onFixedButtonPressedEvent()
+                    }
+                ), shape = CircleShape
+        ) {
+            Icon(
+                modifier = Modifier.size(buttonSize),
+                painter = painterResource(fixedBtnImage),
+                tint = Color.Unspecified,
+                contentDescription = "고정버튼"
             )
-        }) {
-            val mutableInteractionSource = remember { MutableInteractionSource() }
-
-            Surface(
-                modifier = modifier
-                    .wrapContentSize()
-                    .clickable(
-                        indication = rememberRipple(
-                            color = if (isFixedBtnPressed) activatedColor.compositeOver(
-                                Color.Black
-                            ) else inActivatedColor.compositeOver(Color.Black),
-                            bounded = true,
-                            radius = buttonSize / 2
-                        ), //Ripple 효과 제거
-                        interactionSource = mutableInteractionSource,
-                        onClick = {
-                            onFixedButtonPressedEvent()
-                        }
-                    ), shape = CircleShape
-            ) {
-                Icon(
-                    modifier = Modifier.size(buttonSize),
-                    painter = painterResource(id = fixedBtnImage),
-                    tint = Color.Unspecified,
-                    contentDescription = "고정버튼"
-                )
-            }
         }
 
 
@@ -355,11 +348,12 @@ object CameraScreenButtons {
             modifier = modifier
                 .clickable(
                     indication = rememberRipple(
-                        color = LocalColors.current.subSecondaryGray100,
+                        color = LocalColors.current.textSecondary100,
                         bounded = true,
                         radius = buttonSize / 2
                     ), //Ripple 효과 제거
-                    interactionSource = interactionSource, onClick = onClickEvent
+                    interactionSource = interactionSource,
+                    onClick = onClickEvent
                 ), shape = CircleShape
         ) {
             Icon(
@@ -401,7 +395,7 @@ object CameraScreenButtons {
         onSelectedItemEvent: (Int) -> Unit,
         isExpanded: (Boolean) -> Unit,
         defaultButtonSize: Dp = 44.dp,
-        defaultButtonColor: Color = LocalColors.current.subPrimaryBlack100,
+        defaultButtonColor: Color = LocalColors.current.textPrimary100,
         triggerClose: () -> Boolean,
     ) {
         val isExpandedState = remember {
@@ -512,15 +506,16 @@ object CameraScreenButtons {
                     modifier = Modifier
                         .size(defaultButtonSize)
                         .border(
-                            BorderStroke(2.dp, LocalColors.current.subPrimaryBlack100),
+                            BorderStroke(2.dp, LocalColors.current.textPrimary100),
                             shape = CircleShape
                         ),
                     painter = painterResource(id = R.drawable.based_circle),
-                    tint = LocalColors.current.secondaryWhite100,
+                    tint = LocalColors.current.background100,
                     contentDescription = type
                 )
                 Text(
-                    color = LocalColors.current.subPrimaryBlack100,
+                    textAlign = TextAlign.Center,
+                    color = LocalColors.current.textPrimary100,
                     text = itemList[selectedIndexState.intValue], //화면 비 글씨 표기
                     fontWeight = FontWeight(FontWeight.Bold.weight),
                     fontSize = 14.sp

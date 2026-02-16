@@ -40,3 +40,50 @@ internal val Red30 = Color(0xFF93000A)
 internal val Red40 = Color(0xFFBA1A1A)
 internal val Red80 = Color(0xFFFFB4AB)
 internal val Red90 = Color(0xFFFFDAD6)
+
+
+class ProPoseColors(
+    val primaryBlue100: Color,
+    val primaryBlue80: Color,
+    val primaryBlue50: Color,
+    val background100: Color,
+    val background80: Color,
+    val textPrimary100: Color,
+    val textPrimary80: Color,
+    val textSecondary100: Color,
+    val textSecondary80: Color,
+    val errorRed100: Color,
+    val errorRed80: Color,
+    val isLight: Boolean
+)
+
+val LightProPoseColors = ProPoseColors(
+    primaryBlue100 = Blue80,
+    primaryBlue80 = Blue90,
+    primaryBlue50 = Blue40,
+    background100 = White100,
+    background80 = White95,
+    textPrimary100 = DarkNavy40,
+    textPrimary80 = DarkNavy30,
+    textSecondary100 = White60,
+    textSecondary80 = White50,
+    errorRed100 = Red40,
+    errorRed80 = Red80,
+    isLight = true
+)
+
+val DarkProPoseColors = ProPoseColors(
+    primaryBlue100 = Blue40,
+    primaryBlue80 = Blue30,
+    primaryBlue50 = Blue10,
+    background100 = White10,
+    background80 = White20,
+    textPrimary100 = White90,
+    textPrimary80 = White80,
+    textSecondary100 = White60,
+    textSecondary80 = White50,
+    errorRed100 = Red80,
+    errorRed80 = Red40,
+    isLight = false
+)
+

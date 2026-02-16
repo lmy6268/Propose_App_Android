@@ -18,6 +18,7 @@ android {
     packaging {
         jniLibs.pickFirsts += "**/libc++_shared.so"
     }
+
     val properties = Properties().apply {
         load(FileInputStream(rootProject.file("keystore.properties")))
     }
@@ -64,6 +65,7 @@ dependencies {
     implementation(projects.domain)
     implementation(projects.presentation)
     implementation(projects.utils)
+    implementation(projects.opencv)
 
     implementation(libs.facebook.ads.sdk)
 

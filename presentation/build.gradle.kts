@@ -18,6 +18,7 @@ dependencies {
     androidTestImplementation(libs.bundles.android.test)
     implementation(projects.utils)
     implementation(projects.domain)
+    implementation(projects.core.designsystem)
 
     implementation(libs.ossLicenses)
     implementation(libs.androidx.compose.navigation)

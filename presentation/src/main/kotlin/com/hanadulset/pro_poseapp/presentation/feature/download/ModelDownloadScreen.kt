@@ -23,9 +23,9 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -49,9 +49,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hanadulset.pro_poseapp.core.designsystem.theme.*
 import com.hanadulset.pro_poseapp.presentation.R
-import com.hanadulset.pro_poseapp.presentation.component.LocalColors
-import com.hanadulset.pro_poseapp.presentation.component.LocalTypography
 import com.hanadulset.pro_poseapp.presentation.core.CustomDialog
 import com.hanadulset.pro_poseapp.utils.CheckResponse
 import com.hanadulset.pro_poseapp.utils.DownloadState
@@ -95,7 +94,7 @@ object ModelDownloadScreen {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(LocalColors.current.primaryGreen100)
+                .background(LocalColors.current.primaryBlue100)
                 .navigationBarsPadding(),
         ) {
             if (checkState!!.downloadType == CheckResponse.TYPE_MUST_DOWNLOAD
@@ -158,7 +157,7 @@ object ModelDownloadScreen {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(LocalColors.current.primaryGreen100)
+                .background(LocalColors.current.primaryBlue100)
         ) {
             Surface(
                 modifier = Modifier
@@ -248,7 +247,7 @@ object ModelDownloadScreen {
         modifier: Modifier = Modifier,
         progress: Float,
         backgroundColor: Color = Color(0xFFF0F0F0),
-        color: Color = LocalColors.current.primaryGreen100,
+        color: Color = LocalColors.current.primaryBlue100,
     ) {
         val strokeWidth = LocalDensity.current.run { 15.dp.toPx() }
 

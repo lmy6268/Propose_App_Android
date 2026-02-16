@@ -11,6 +11,8 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.MeteringPoint
 import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
+import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
@@ -34,7 +36,7 @@ class CameraDataSourceImpl(private val context: Context) : CameraDataSource {
     private lateinit var imageAnalysis: ImageAnalysis
     private val executor by lazy { ContextCompat.getMainExecutor(context) }
 
-    private var isOPENCVInit: Boolean = false
+
 
     private lateinit var camera: Camera
     private lateinit var cameraProvider: ProcessCameraProvider
@@ -48,9 +50,7 @@ class CameraDataSourceImpl(private val context: Context) : CameraDataSource {
         aspectRatio: Int,
         previewRotation: Int,
         analyzer: Analyzer
-    ): CameraState = suspendCoroutine { cont ->
-        if (!isOPENCVInit) isOPENCVInit = OpenCVLoader.initLocal()
-
+    ): CameraState = suspendCancellableCoroutine { cont ->
         prepareCamera(
             lifecycleOwner,
             surfaceProvider,
@@ -101,21 +101,28 @@ class CameraDataSourceImpl(private val context: Context) : CameraDataSource {
             CameraSelector.LENS_FACING_BACK
         ).build()
 
+        val resolutionSelector = ResolutionSelector.Builder()
+            .setAspectRatioStrategy(
+                AspectRatioStrategy(aspectRatio, AspectRatioStrategy.FALLBACK_RULE_AUTO)
+            )
+            .build()
+
         preview = Preview.Builder()
-            .setTargetAspectRatio(aspectRatio)
+            .setResolutionSelector(resolutionSelector)
             .setTargetRotation(previewRotation)
             .build()
+            .apply { setSurfaceProvider(surfaceProvider) }
 
 
         imageCapture =
             ImageCapture.Builder()
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                .setTargetAspectRatio(aspectRatio)
+                .setResolutionSelector(resolutionSelector)
                 .setTargetRotation(previewRotation)
                 .build()
 
         imageAnalysis = ImageAnalysis.Builder()
-            .setTargetAspectRatio(aspectRatio)
+            .setResolutionSelector(resolutionSelector)
             .setTargetRotation(previewRotation)
             .build().apply { setAnalyzer(executor, analyzer) }
 
@@ -127,7 +134,6 @@ class CameraDataSourceImpl(private val context: Context) : CameraDataSource {
             imageCapture,
             imageAnalysis
         )
-        preview.setSurfaceProvider(surfaceProvider)
     }
 
 
@@ -158,7 +164,7 @@ class CameraDataSourceImpl(private val context: Context) : CameraDataSource {
 
     fun unbindCameraResources(): Boolean {
         return try {
-            cameraProvider!!.unbindAll()
+            cameraProvider.unbindAll()
             true
         } catch (exc: Exception) {
             false
@@ -170,12 +176,12 @@ class CameraDataSourceImpl(private val context: Context) : CameraDataSource {
 //        val minValue = camera.cameraInfo.zoomState.value!!.minZoomRatio
 //        val maxValue = camera.cameraInfo.zoomState.value!!.maxZoomRatio
 //        Log.d("MIN/MAX ZoomRatio: ","$minValue/$maxValue")
-        camera!!.cameraControl.setZoomRatio(zoomLevel)
+        camera.cameraControl.setZoomRatio(zoomLevel)
     }
 
     override fun setFocus(meteringPoint: MeteringPoint, durationMilliSeconds: Long) {
 //        camera!!.cameraControl.startFocusAndMetering()
-        camera!!.cameraControl.startFocusAndMetering(
+        camera.cameraControl.startFocusAndMetering(
             FocusMeteringAction.Builder(meteringPoint)
                 .setAutoCancelDuration(durationMilliSeconds, TimeUnit.MILLISECONDS)
                 .build()

@@ -41,10 +41,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import com.hanadulset.pro_poseapp.core.designsystem.component.CircularProgressBar
+import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
 import com.hanadulset.pro_poseapp.presentation.R
-import com.hanadulset.pro_poseapp.presentation.component.LocalColors
-import com.hanadulset.pro_poseapp.presentation.component.LocalTypography
-import com.hanadulset.pro_poseapp.presentation.component.UIComponents
 import com.hanadulset.pro_poseapp.presentation.core.CustomDialog
 import com.hanadulset.pro_poseapp.utils.camera.CameraState
 import kotlinx.coroutines.delay
@@ -134,7 +133,7 @@ object PrepareServiceScreens {
                     .placeholder(R.drawable.app_icon_rounded_without_background)
                     .build()
             )
-            val style = LocalTypography.current
+            val style = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography.current
             val color = LocalColors.current
             val positionOfTitle = remember { mutableStateOf(Offset.Zero) }
 
@@ -169,7 +168,7 @@ object PrepareServiceScreens {
             }
             Canvas(modifier = Modifier.fillMaxSize()) {
                 drawCircle(
-                    color = color.primaryGreen100,
+                    color = color.primaryBlue100,
                     radius = localDensity.run { 320.dp.toPx() },
                     center = localDensity.run {
                         positionOfTitle.value.let {
@@ -182,7 +181,7 @@ object PrepareServiceScreens {
                 Box(
                     modifier = Modifier
                         .zIndex(2F)
-                        .background(LocalColors.current.secondaryWhite100.copy(alpha = 0.5F))
+                        .background(LocalColors.current.background100.copy(alpha = 0.5F))
                         .fillMaxSize()
                 )
                 {
@@ -207,7 +206,9 @@ object PrepareServiceScreens {
                             }
                         },
                         onDismissRequest = {
-                            if (showUpdateDialog.value!!["mustToUpdate"]!!.toBoolean().not()) onCheckForMoveToNext()
+                            if (showUpdateDialog.value!!["mustToUpdate"]!!.toBoolean()
+                                    .not()
+                            ) onCheckForMoveToNext()
                             else (localContext as Activity).finishAffinity()
                         })
                 }
@@ -291,7 +292,7 @@ object PrepareServiceScreens {
                     .placeholder(R.drawable.app_icon_rounded_without_background)
                     .build()
             )
-            val style = LocalTypography.current
+            val style = com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography.current
             val color = LocalColors.current
 
             val positionOfTitle = remember {
@@ -327,9 +328,9 @@ object PrepareServiceScreens {
                         Alignment.CenterVertically
                     )
                 ) {
-                    UIComponents.CircularWaitingBar(
-                        barColor = LocalColors.current.secondaryWhite100,
-                        backgroundColor = LocalColors.current.subSecondaryGray100
+                    CircularProgressBar(
+                        barColor = LocalColors.current.background100,
+                        backgroundColor = LocalColors.current.textSecondary100
                     )
                     Text(
                         text = "$APP_NAME 로딩중...",
@@ -340,7 +341,7 @@ object PrepareServiceScreens {
             }
             Canvas(modifier = Modifier.fillMaxSize()) {
                 drawCircle(
-                    color = color.primaryGreen100,
+                    color = color.primaryBlue100,
                     radius = localDensity.run { 320.dp.toPx() },
                     center = localDensity.run {
                         positionOfTitle.value.let {

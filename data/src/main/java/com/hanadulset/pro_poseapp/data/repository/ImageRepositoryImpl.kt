@@ -17,11 +17,15 @@ import com.hanadulset.pro_poseapp.domain.repository.ImageRepository
 import com.hanadulset.pro_poseapp.utils.camera.ImageResult
 import com.hanadulset.pro_poseapp.utils.pose.PoseDataResult
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.core.graphics.scale
 
 @Singleton
-class ImageRepositoryImpl @Inject constructor(@ApplicationContext private val applicationContext: Context) : ImageRepository {
+class ImageRepositoryImpl @Inject constructor(@param:ApplicationContext private val applicationContext: Context) :
+    ImageRepository {
     private val modelRunnerImpl by lazy {
         ModelRunnerDataSourceDataSourceImpl(applicationContext)
     }
@@ -43,25 +47,30 @@ class ImageRepositoryImpl @Inject constructor(@ApplicationContext private val ap
     }
 
 
-    override suspend fun getRecommendCompInfo(backgroundBitmap: Bitmap) = compDataSource.recommendCompData(backgroundBitmap)
+    override suspend fun getRecommendCompInfo(backgroundBitmap: Bitmap) =
+        withContext(Dispatchers.Default) {
+            compDataSource.recommendCompData(backgroundBitmap)
+        }
 
 
     override suspend fun getRecommendPose(
         backgroundBitmap: Bitmap
-    ): PoseDataResult = poseDataSourceImpl.recommendPose(backgroundBitmap)
+    ): PoseDataResult = withContext(Dispatchers.Default) {
+        poseDataSourceImpl.recommendPose(backgroundBitmap)
+    }
 
 
-    override fun getFixedScreen(backgroundBitmap: Bitmap): Bitmap =
-        imageProcessDataSource.getFixedImage(bitmap = backgroundBitmap).apply {
+    override suspend fun getFixedScreen(backgroundBitmap: Bitmap): Bitmap =
+        withContext(Dispatchers.Default) {
+            imageProcessDataSource.getFixedImage(bitmap = backgroundBitmap)
         }
 
 
-    override suspend fun getLatestImage(): Uri? {
+    override suspend fun getLatestImage(): Uri? = withContext(Dispatchers.IO) {
         val data = fileHandleDataSource.loadCapturedImages(false)
-        return if (data.isEmpty()) null
+        if (data.isEmpty()) null
         else data[0].dataUri
     }
-
 
 
     override suspend fun preRunModel(): Boolean {
@@ -70,43 +79,48 @@ class ImageRepositoryImpl @Inject constructor(@ApplicationContext private val ap
     }
 
     //이미지에서 포즈를 가져오기
-    override fun getPoseFromImage(uri: Uri?): Bitmap? = if (uri != null) {
-        val backgroundBitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            ImageDecoder.decodeBitmap(
-                ImageDecoder.createSource(
-                    applicationContext.contentResolver,
-                    uri
+    override suspend fun getPoseFromImage(uri: Uri?): Bitmap? = withContext(Dispatchers.IO) {
+        if (uri != null) {
+            val backgroundBitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                ImageDecoder.decodeBitmap(
+                    ImageDecoder.createSource(
+                        applicationContext.contentResolver,
+                        uri
+                    )
                 )
-            )
-        } else {
-            MediaStore.Images.Media.getBitmap(applicationContext.contentResolver, uri);
-        }
+            } else {
+                MediaStore.Images.Media.getBitmap(applicationContext.contentResolver, uri)
+            }
 
-        backgroundBitmap.copy(Bitmap.Config.ARGB_8888,true).run {
-            val scaledSize =  if(width/height.toFloat() == 9/16F)  Size(720,1280) else Size(480,640)
-            Bitmap.createScaledBitmap(this,scaledSize.width,scaledSize.height,false).let{
-                getFixedScreen(it).apply {
-                    it.recycle()
+            backgroundBitmap.copy(Bitmap.Config.RGB_565, true).run {
+                val scaledSize = if (width / height.toFloat() == 9 / 16F) Size(720, 1280) else Size(480, 640)
+                this.scale(scaledSize.width, scaledSize.height, false).let {
+                    getFixedScreen(it).apply {
+                        it.recycle()
+                    }
                 }
             }
-        }
-    } else null
+        } else null
+    }
 
-    override suspend fun loadAllCapturedImages(): List<ImageResult> =
+    override suspend fun loadAllCapturedImages(): List<ImageResult> = withContext(Dispatchers.IO) {
         fileHandleDataSource.loadCapturedImages(true)
+    }
 
 
-    override suspend fun deleteCapturedImage(uri: Uri): Boolean =
+    override suspend fun deleteCapturedImage(uri: Uri): Boolean = withContext(Dispatchers.IO) {
         fileHandleDataSource.deleteCapturedImage(uri)
+    }
 
     override suspend fun updateOffsetPoint(
         backgroundBitmap: Bitmap,
         targetOffset: SizeF
-    ): SizeF? =
+    ): SizeF? = withContext(Dispatchers.Default) {
         imageProcessDataSource.useOpticalFlow(
             targetOffset = targetOffset,
             bitmap = backgroundBitmap
         )
+    }
 
     override fun stopPointOffset() {
         imageProcessDataSource.stopToUseOpticalFlow()
