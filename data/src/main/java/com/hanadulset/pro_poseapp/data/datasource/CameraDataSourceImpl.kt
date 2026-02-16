@@ -11,6 +11,8 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.MeteringPoint
 import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
+import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
@@ -99,21 +101,28 @@ class CameraDataSourceImpl(private val context: Context) : CameraDataSource {
             CameraSelector.LENS_FACING_BACK
         ).build()
 
+        val resolutionSelector = ResolutionSelector.Builder()
+            .setAspectRatioStrategy(
+                AspectRatioStrategy(aspectRatio, AspectRatioStrategy.FALLBACK_RULE_AUTO)
+            )
+            .build()
+
         preview = Preview.Builder()
-            .setTargetAspectRatio(aspectRatio)
+            .setResolutionSelector(resolutionSelector)
             .setTargetRotation(previewRotation)
             .build()
+            .apply { setSurfaceProvider(surfaceProvider) }
 
 
         imageCapture =
             ImageCapture.Builder()
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                .setTargetAspectRatio(aspectRatio)
+                .setResolutionSelector(resolutionSelector)
                 .setTargetRotation(previewRotation)
                 .build()
 
         imageAnalysis = ImageAnalysis.Builder()
-            .setTargetAspectRatio(aspectRatio)
+            .setResolutionSelector(resolutionSelector)
             .setTargetRotation(previewRotation)
             .build().apply { setAnalyzer(executor, analyzer) }
 
@@ -125,7 +134,6 @@ class CameraDataSourceImpl(private val context: Context) : CameraDataSource {
             imageCapture,
             imageAnalysis
         )
-        preview.setSurfaceProvider(surfaceProvider)
     }
 
 
