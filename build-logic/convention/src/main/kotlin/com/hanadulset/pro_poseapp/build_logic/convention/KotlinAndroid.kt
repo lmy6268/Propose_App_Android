@@ -23,6 +23,15 @@ internal fun Project.configureKotlinAndroid(
         compileSdk = findVersion("compileSdk").toInt()
         defaultConfig {
             minSdk = findVersion("minSdk").toInt()
+
+            externalNativeBuild {
+                cmake {
+                    arguments(
+                        "-DANDROID_STL=c++_shared",
+                        "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384"
+                    )
+                }
+            }
         }
         compileOptions {
             sourceCompatibility = JavaVersion.VERSION_17

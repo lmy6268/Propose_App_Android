@@ -21,9 +21,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import androidx.core.graphics.scale
 
 @Singleton
-class ImageRepositoryImpl @Inject constructor(@ApplicationContext private val applicationContext: Context) : ImageRepository {
+class ImageRepositoryImpl @Inject constructor(@param:ApplicationContext private val applicationContext: Context) :
+    ImageRepository {
     private val modelRunnerImpl by lazy {
         ModelRunnerDataSourceDataSourceImpl(applicationContext)
     }
@@ -71,7 +73,6 @@ class ImageRepositoryImpl @Inject constructor(@ApplicationContext private val ap
     }
 
 
-
     override suspend fun preRunModel(): Boolean {
         poseDataSourceImpl.preparePoseData()
         return modelRunnerImpl.preRun()
@@ -92,9 +93,8 @@ class ImageRepositoryImpl @Inject constructor(@ApplicationContext private val ap
             }
 
             backgroundBitmap.copy(Bitmap.Config.RGB_565, true).run {
-                val scaledSize =
-                    if (width / height.toFloat() == 9 / 16F) Size(720, 1280) else Size(480, 640)
-                Bitmap.createScaledBitmap(this, scaledSize.width, scaledSize.height, false).let {
+                val scaledSize = if (width / height.toFloat() == 9 / 16F) Size(720, 1280) else Size(480, 640)
+                this.scale(scaledSize.width, scaledSize.height, false).let {
                     getFixedScreen(it).apply {
                         it.recycle()
                     }

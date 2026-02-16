@@ -65,6 +65,7 @@ dependencies {
     implementation(projects.domain)
     implementation(projects.presentation)
     implementation(projects.utils)
+    implementation(projects.opencv)
 
     implementation(libs.facebook.ads.sdk)
 
