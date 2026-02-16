@@ -1,6 +1,5 @@
 package com.hanadulset.pro_poseapp.data.datasource
 
-//import org.opencv.core.Size
 import android.graphics.Bitmap
 import android.util.Log
 import android.util.SizeF
@@ -8,51 +7,42 @@ import androidx.core.graphics.createBitmap
 import com.hanadulset.pro_poseapp.data.datasource.interfaces.ImageProcessDataSource
 import org.opencv.android.OpenCVLoader
 import org.opencv.android.Utils
+import org.opencv.calib3d.Calib3d
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.core.MatOfByte
 import org.opencv.core.MatOfFloat
 import org.opencv.core.MatOfPoint
 import org.opencv.core.MatOfPoint2f
+import org.opencv.core.Point
 import org.opencv.core.Scalar
 import org.opencv.core.Size
 import org.opencv.imgproc.Imgproc
 import org.opencv.video.Video
-import kotlin.math.pow
-import kotlin.math.sqrt
 
-
-//이미지 처리
 class ImageProcessDataSourceImpl : ImageProcessDataSource {
 
     init {
         if (OpenCVLoader.initLocal()) {
             Log.i("OpenCV", "OpenCV loaded successfully")
-        } else {
-            Log.e("OpenCV", "OpenCV load failed")
         }
     }
 
     private var prevFrame: Mat? = null
-    private var prevPoint: SizeF? = null
     private var prevCornerPoint: MatOfPoint2f? = null
+    private var isAnchorSet = false
+    private var lastValidOffset: SizeF? = null
 
     override fun getFixedImage(bitmap: Bitmap): Bitmap {
         val input = Mat()
-
-        Utils.bitmapToMat(bitmap, input) // bitmap을 매트릭스로 변환
-        Imgproc.cvtColor(input, input, Imgproc.COLOR_RGB2GRAY) //흑백으로 변경
+        Utils.bitmapToMat(bitmap, input)
+        Imgproc.cvtColor(input, input, Imgproc.COLOR_RGB2GRAY)
         val hierarchy = Mat.zeros(input.size(), input.type())
         val output = Mat.zeros(input.size(), input.type())
-        //Canny Edge Detection을 이용하여, 엣지를 추출함.
 
-//        Imgproc.threshold(input,input,127.0,255.0,Imgproc.THRESH_BINARY)
-//        Core.bitwise_not(input,input)
         Imgproc.Canny(input, output, 50.0, 150.0)
         val points = mutableListOf<MatOfPoint>()
-        Imgproc.findContours(
-            input, points, hierarchy, Imgproc.RETR_CCOMP, Imgproc.CHAIN_APPROX_NONE
-        )
+        Imgproc.findContours(input, points, hierarchy, Imgproc.RETR_CCOMP, Imgproc.CHAIN_APPROX_NONE)
         for (i in points.indices) {
             Imgproc.drawContours(output, points, i, Scalar(255.0, 255.0, 255.0))
         }
@@ -61,7 +51,6 @@ class ImageProcessDataSourceImpl : ImageProcessDataSource {
             Utils.matToBitmap(output, this)
         }
     }
-
 
     private fun bitmapToMatWithOpenCV(bitmap: Bitmap): Mat {
         val resMat = Mat(bitmap.width, bitmap.height, CvType.CV_8UC3)
@@ -74,89 +63,93 @@ class ImageProcessDataSourceImpl : ImageProcessDataSource {
         val inputImageMat = Mat(bitmap.width, bitmap.height, CvType.CV_8UC3)
         val outputResizeBitmap = createBitmap(size.width.toInt(), size.height.toInt(), Bitmap.Config.RGB_565)
         Utils.bitmapToMat(bitmap, inputImageMat)
-        Imgproc.cvtColor(inputImageMat, inputImageMat, Imgproc.COLOR_RGBA2RGB) //알파값을 빼고 저장
+        Imgproc.cvtColor(inputImageMat, inputImageMat, Imgproc.COLOR_RGBA2RGB)
         Imgproc.resize(inputImageMat, inputImageMat, size)
         Utils.matToBitmap(inputImageMat, outputResizeBitmap)
         return outputResizeBitmap
     }
 
-
+    /**
+     * 호모그래피(Homography) 기반 고성능 트래킹
+     * 카메라의 모든 변화(이동, 회전, 줌)를 계산하여 Anchor를 고정합니다.
+     */
     override suspend fun useOpticalFlow(bitmap: Bitmap, targetOffset: SizeF): SizeF? =
         kotlin.runCatching {
-            if (prevFrame == null) {
-                prevFrame = bitmapToMatWithOpenCV(bitmap)
-                prevPoint = targetOffset
+            val currentFrame = bitmapToMatWithOpenCV(bitmap)
 
-                prevCornerPoint = MatOfPoint().apply {
-                    Imgproc.goodFeaturesToTrack(prevFrame, this, 1000, 0.01, 10.0)
-                }.let { goodCorner -> MatOfPoint2f().apply { fromList(goodCorner.toList()) } }
+            if (prevFrame == null || !isAnchorSet) {
+                prevFrame = currentFrame
+                isAnchorSet = true
+                lastValidOffset = targetOffset
+                
+                val corners = MatOfPoint()
+                Imgproc.goodFeaturesToTrack(currentFrame, corners, 500, 0.01, 10.0)
+                prevCornerPoint = MatOfPoint2f().apply { fromList(corners.toList()) }
+                
                 return targetOffset
-            } //흑백이미지 Matrix
+            } else {
+                val status = MatOfByte()
+                val err = MatOfFloat()
+                val nextCornerPoint = MatOfPoint2f()
 
-            else {
-                val outputFrame = bitmapToMatWithOpenCV(bitmap) //흑백이미지 Matrix
-                val outputState = MatOfByte()
-                val outputErr = MatOfFloat()
-                val outputCornerPoint = MatOfPoint().apply {
-                    Imgproc.goodFeaturesToTrack(outputFrame, this, 1000, 0.01, 10.0)
-                }.let { goodCorner -> MatOfPoint2f().apply { fromList(goodCorner.toList()) } }
+                Video.calcOpticalFlowPyrLK(prevFrame, currentFrame, prevCornerPoint, nextCornerPoint, status, err)
 
-                Video.calcOpticalFlowPyrLK(
-                    prevFrame,
-                    outputFrame,
-                    prevCornerPoint,
-                    outputCornerPoint,
-                    outputState,
-                    outputErr,
-                )
-                //트래킹에 실패하면, outputState.toList().map { it.toInt() }.toSet() <-  이 값이 [0]이 된다.
-                val isFailToTrack = outputState.toList().all { it.toInt() == 0 }
-                return if (isFailToTrack.not()) {
-                    val outputPoint =
-                        calculateOffsetDiff(prevCornerPoint!!, outputCornerPoint, targetOffset)
-                    prevFrame = outputFrame //업데이트
-                    prevPoint = outputPoint
-                    prevCornerPoint = outputCornerPoint
-                    outputPoint
-                } else throw Exception()
+                val statusList = status.toList()
+                val prevList = prevCornerPoint!!.toList()
+                val nextList = nextCornerPoint.toList()
+
+                val goodPrev = mutableListOf<Point>()
+                val goodNext = mutableListOf<Point>()
+
+                for (i in statusList.indices) {
+                    if (statusList[i].toInt() == 1) {
+                        goodPrev.add(prevList[i])
+                        goodNext.add(nextList[i])
+                    }
+                }
+
+                if (goodNext.size > 10) { // 최소 10개 이상의 포인트가 매칭되어야 함
+                    val srcPoints = MatOfPoint2f().apply { fromList(goodPrev) }
+                    val dstPoints = MatOfPoint2f().apply { fromList(goodNext) }
+
+                    // 1. 호모그래피 행렬 계산 (RANSAC 알고리즘으로 노이즈 제거)
+                    val homography = Calib3d.findHomography(srcPoints, dstPoints, Calib3d.RANSAC, 5.0)
+
+                    if (!homography.empty()) {
+                        // 2. 현재 Anchor 좌표에 호모그래피 변환 적용
+                        val pointsToTransform = MatOfPoint2f(Point(targetOffset.width.toDouble(), targetOffset.height.toDouble()))
+                        val transformedPoints = MatOfPoint2f()
+                        org.opencv.core.Core.perspectiveTransform(pointsToTransform, transformedPoints, homography)
+
+                        val resultPoint = transformedPoints.toList()[0]
+                        val updatedOffset = SizeF(resultPoint.x.toFloat(), resultPoint.y.toFloat())
+
+                        // 3. 상태 업데이트 및 포인트 보충
+                        prevFrame = currentFrame
+                        lastValidOffset = updatedOffset
+                        
+                        if (goodNext.size < 150) {
+                            val newCorners = MatOfPoint()
+                            Imgproc.goodFeaturesToTrack(currentFrame, newCorners, 500, 0.01, 10.0)
+                            prevCornerPoint = MatOfPoint2f().apply { fromList(newCorners.toList()) }
+                        } else {
+                            prevCornerPoint = dstPoints
+                        }
+                        
+                        return updatedOffset
+                    }
+                }
+                
+                // 트래킹 일시적 실패 시 이전 위치 유지
+                prevFrame = currentFrame
+                return lastValidOffset ?: targetOffset
             }
         }.getOrNull()
 
-
-    private fun calculateOffsetDiff(
-        prevCornerPoint: MatOfPoint2f, outputCornerPoint: MatOfPoint2f, targetOffset: SizeF
-    ): SizeF {
-        val distanceArr = FloatArray(outputCornerPoint.toList().size)
-
-        for (i in 0 until outputCornerPoint.toList().size) {
-            val outputPoint = outputCornerPoint.toList()[i]
-            distanceArr[i] = sqrt(
-                (outputPoint.x - targetOffset.width).pow(2) + (outputPoint.y - targetOffset.height).pow(
-                    2
-                )
-            ).toFloat()
-        }
-        val index = distanceArr.indices.minBy { distanceArr[it] }
-
-        val prevX = prevCornerPoint.toList()[index].x
-        val prevY = prevCornerPoint.toList()[index].y
-
-        val outPutX = outputCornerPoint.toList()[index].x
-        val outPutY = outputCornerPoint.toList()[index].y
-
-        return targetOffset.let {
-            SizeF(
-                it.width + (outPutX - prevX).toFloat(), it.height + (outPutY - prevY).toFloat()
-            )
-        }
-    }
-
-
     override fun stopToUseOpticalFlow() {
         prevFrame = null
-        prevPoint = null
         prevCornerPoint = null
+        isAnchorSet = false
+        lastValidOffset = null
     }
-
-
 }

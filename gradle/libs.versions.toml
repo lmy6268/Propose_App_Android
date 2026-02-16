@@ -34,7 +34,7 @@ androidx-datastore = "1.0.0"
 cameraX = "1.4.2"
 
 # ── DI / Hilt ──
-hilt-compiler = "2.51" #https://dagger.dev/dev-guide/ksp.html
+hilt-compiler = "2.51"
 
 # ── Database ──
 room = "2.6.1"
@@ -42,6 +42,7 @@ room = "2.6.1"
 # ── ML / AI ──
 poseDetectionAccurate = "18.0.0-beta5"
 pytorch-android = "2.1.0"
+mediapipe = "0.10.14"
 
 # ── Networking ──
 ktor = "2.3.3"
@@ -73,17 +74,12 @@ ossLicenses = "17.1.0"
 jetbrainsKotlinJvm = "1.9.0"
 navigation-saveArgs = "2.5.1"
 
-# ── OpenCV (reference only, used in opencv module build) ──
+# ── OpenCV ──
 opencv-versionName = "4.13.0"
 opencv-versionCode = "413000"
 
-# ── Unused (candidates for removal) ──
-# gen-graph = "0.8.0"
-# spotify-ruler = "1.4.0"
-
 
 [libraries]
-
 # ── Android Core ──
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
@@ -131,6 +127,7 @@ room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 pose-detection-accurate = { module = "com.google.mlkit:pose-detection-accurate", version.ref = "poseDetectionAccurate" }
 pytorch-androidLite = { group = "org.pytorch", name = "pytorch_android_lite", version.ref = "pytorch-android" }
 pytorch-androidTorchVision = { group = "org.pytorch", name = "pytorch_android_torchvision_lite", version.ref = "pytorch-android" }
+mediapipe-vision = { group = "com.google.mediapipe", name = "tasks-vision", version.ref = "mediapipe" }
 
 # ── Networking ──
 ktor-clientCio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
@@ -178,28 +175,21 @@ ksp-gradlePlugin = { group = "com.google.devtools.ksp", name = "com.google.devto
 android-desugarJdkLibs = { group = "com.android.tools", name = "desugar_jdk_libs", version.ref = "androidDesugarJdkLibs" }
 room-gradlePlugin = { group = "androidx.room", name = "room-gradle-plugin", version.ref = "room" }
 
-# ── Unused (candidates for removal) ──
-# gen-graph = { group = "com.vanniktech", name = "gradle-dependency-graph-generator-plugin", version.ref = "gen-graph" }
-# spotify-ruler = { group = "com.spotify.ruler", name = "ruler-gradle-plugin", version.ref = "spotify-ruler" }
-
 
 [plugins]
-# ── Core Plugins ──
 android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
 android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "jetbrainsKotlinJvm" }
 google-devtool-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-
-# ── DI / Database / Navigation ──
 dagger-hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt-compiler" }
 androidx-room = { id = "androidx.room", version.ref = "room" }
 navigation-saveargs = { id = "androidx.navigation.safeargs.kotlin", version.ref = "navigation-saveArgs" }
-
-# ── Licensing ──
 ossLicensesPlugin = { id = "com.google.android.gms.oss-licenses-plugin", version.ref = "ossLicensesPlugin" }
+# Compose Compiler Plugin (Required for Kotlin 2.0+, but added for reference if needed)
+# compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 
-# ── Convention Plugins (defined by this project) ──
+# ── Convention Plugins ──
 propose-android-application = { id = "propose.android.application", version = "unspecified" }
 propose-android-feature = { id = "propose.android.feature", version = "unspecified" }
 propose-android-hilt = { id = "propose.android.hilt", version = "unspecified" }
