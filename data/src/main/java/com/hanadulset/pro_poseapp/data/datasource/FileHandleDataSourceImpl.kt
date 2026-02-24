@@ -1,145 +1,91 @@
 package com.hanadulset.pro_poseapp.data.datasource
 
-import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
-import android.os.Environment
 import android.provider.MediaStore
-import android.util.Log
-import androidx.core.net.toUri
 import com.hanadulset.pro_poseapp.data.datasource.interfaces.FileHandleDataSource
-import com.hanadulset.pro_poseapp.utils.camera.ImageResult
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.io.File
+import com.hanadulset.pro_poseapp.domain.model.camera.ImageResultModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
+import javax.inject.Inject
 
-
-class FileHandleDataSourceImpl(private val context: Context) : FileHandleDataSource {
-    override suspend fun saveImageToGallery(bitmap: Bitmap): Uri =
-        withContext(Dispatchers.IO) {
-            val sdf = System.currentTimeMillis()
-            val filename = "IMG_${sdf}.jpg"
-            var uri: Uri? = null
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-                context.contentResolver.insert(
-                    MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL),
-                    ContentValues().apply {
-                        put(MediaStore.Images.ImageColumns.DATE_ADDED, sdf)
-                        put(MediaStore.Images.ImageColumns.DISPLAY_NAME, filename)
-                        put(MediaStore.Images.ImageColumns.MIME_TYPE, "image/jpg")
-                        put(MediaStore.Images.ImageColumns.RELATIVE_PATH, PROPOSE_PATH)
-                    })?.let {
-                    uri = it
-                    context.contentResolver.openOutputStream(it)
-                }?.use { bitmap.compress(Bitmap.CompressFormat.JPEG, 80, it) }
-
-            //이하 버전에서는 문제가 없음
-            else {
-                Environment.getExternalStoragePublicDirectory(PROPOSE_PATH).run {
-                    File(absolutePath).let {
-                        if (it.exists().not()) it.mkdir()
-                        val image = File(this, filename)
-                        uri = image.toUri()
-                        image.outputStream()
-                    }.use {
-                        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, it)
-                        context.sendBroadcast(
-                            Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, uri)
-                        )
-                    }
-                }
-            }
-            uri!!
+class FileHandleDataSourceImpl @Inject constructor(@param:ApplicationContext private val context: Context) :
+    FileHandleDataSource {
+    override suspend fun saveImageToGallery(bitmap: Bitmap): Uri {
+        val contentResolver = context.contentResolver
+        val imageCollection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        } else {
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI
         }
 
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val imageFileName = "ProPose_$timeStamp.jpg"
 
-    override suspend fun loadCapturedImages(isReadAllImage: Boolean): List<ImageResult> {
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, imageFileName)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/ProPose")
+                put(MediaStore.Images.Media.IS_PENDING, 1)
+            }
+        }
 
-        val resList = mutableListOf<ImageResult>()
+        val imageUri = contentResolver.insert(imageCollection, contentValues)!!
 
+        contentResolver.openOutputStream(imageUri)?.use { outputStream ->
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val externalUri = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
-            val selection = "${MediaStore.Images.ImageColumns.RELATIVE_PATH} like ?"
-            val projection = arrayOf(
-                MediaStore.Images.ImageColumns._ID,
-                MediaStore.Images.ImageColumns.DATE_ADDED,
-                MediaStore.Images.ImageColumns.DATA
-            )
-            val selectionArgs = arrayOf("%$PROPOSE_PATH%")
-            context.contentResolver.query(
-                externalUri,
-                projection,
-                selection,
-                selectionArgs,
-                MediaStore.Images.ImageColumns.DATE_ADDED + " DESC "
-            ).use { cursor ->
-                if (cursor == null) return emptyList()
-                else if (cursor.moveToFirst()) {
-                    do {
-                        if (cursor.isNull(1).not()
-                        ) { //MediaStore.Images.Media.DATE_ADDED 컬럼 값이 Null이 아닌 경우
-                            val idColNum =
-                                cursor.getColumnIndexOrThrow(MediaStore.Images.ImageColumns._ID)
-                            val imageId = cursor.getLong(idColNum)
-                            val imageTakenDate = cursor.getString(1).let { timestamp ->
-                                val sdf = SimpleDateFormat("yyyy년 MM월 dd일 E요일", Locale.KOREAN)
-                                sdf.format(timestamp.toLong())
-                            }
-                            val imageUri = ContentUris.withAppendedId(externalUri, imageId)
-                            val imageResult =
-                                ImageResult(imageUri, takenDate = imageTakenDate)
-                            resList.add(imageResult)
-                            if (isReadAllImage.not()) break //한개의 이미지 데이터만 가져오는 경우
-                        }
-                    } while (cursor.moveToNext())
-                }
-            }
-        } else {
-            val imagesDir =
-                Environment.getExternalStoragePublicDirectory(PROPOSE_PATH)
-            if (imagesDir.exists()) {
-                imagesDir.listFiles().apply { this?.sortByDescending { it.lastModified() } }
-                    ?.forEach {
-                        resList.add(ImageResult(it.toUri(), it.lastModified().toString()))
-                        if (isReadAllImage.not()) return resList.toList() //한개의 이미지만 반환
-                    }
+            contentValues.clear()
+            contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
+            contentResolver.update(imageUri, contentValues, null, null)
+        }
+
+        return imageUri
+    }
+
+    override suspend fun loadCapturedImages(isReadAllImage: Boolean): List<ImageResultModel> {
+        val imageList = mutableListOf<ImageResultModel>()
+        val projection = arrayOf(
+            MediaStore.Images.Media._ID,
+            MediaStore.Images.Media.DATE_ADDED
+        )
+        val selection = "${MediaStore.Images.Media.RELATIVE_PATH} LIKE ?"
+        val selectionArgs = arrayOf("%ProPose%")
+        val sortOrder = "${MediaStore.Images.Media.DATE_ADDED} DESC"
+
+        context.contentResolver.query(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            projection,
+            selection,
+            selectionArgs,
+            sortOrder
+        )?.use { cursor ->
+            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+            val dateColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED)
+
+            while (cursor.moveToNext()) {
+                val id = cursor.getLong(idColumn)
+                val date = cursor.getLong(dateColumn)
+                val contentUri = Uri.withAppendedPath(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    id.toString()
+                )
+                imageList.add(ImageResultModel(dataUri = contentUri, takenDate = date.toString()))
+                if (!isReadAllImage) break
             }
         }
-        return resList.toList()
+        return imageList
     }
 
     override suspend fun deleteCapturedImage(uri: Uri): Boolean {
-        return try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val proj = arrayOf(MediaStore.Images.Media.DATA)
-                val cursor = context.contentResolver.query(uri, proj, null, null, null)
-                if (cursor != null) {
-                    File(cursor.use {
-                        val index = it.getColumnIndex(MediaStore.MediaColumns.DATA)
-                        it.getString(index)
-                    }).delete()
-
-                } else context.contentResolver.delete(uri, null, null)
-                true
-            } else {
-                uri.path?.run { File(this).delete() }
-                true
-            }
-        } catch (ex: Exception) {
-            false
-        }
+        return context.contentResolver.delete(uri, null, null) > 0
     }
-
-    companion object {
-        private const val FILE_NAME = "yyyy_MM_dd_HH_mm_ss_SSS"
-        private val PROPOSE_PATH = "${Environment.DIRECTORY_PICTURES}/ProPose"
-    }
-
 }

@@ -63,8 +63,7 @@ dependencies {
     //Paths
     implementation(projects.data)
     implementation(projects.domain)
-    implementation(projects.presentation)
-    implementation(projects.utils)
+    implementation(projects.ui)
     implementation(projects.opencv)
 
     implementation(libs.facebook.ads.sdk)

@@ -16,7 +16,6 @@ dependencies {
     androidTestImplementation(libs.bundles.android.test)
 
     implementation(projects.domain)
-    implementation(projects.utils)
     implementation(projects.opencv)
 
     implementation(libs.bundles.pytorch)

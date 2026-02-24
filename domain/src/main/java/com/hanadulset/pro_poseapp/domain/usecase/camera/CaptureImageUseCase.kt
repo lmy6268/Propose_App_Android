@@ -1,7 +1,7 @@
 package com.hanadulset.pro_poseapp.domain.usecase.camera
 
+import com.hanadulset.pro_poseapp.domain.model.CaptureEventData
 import com.hanadulset.pro_poseapp.domain.repository.CameraRepository
-import com.hanadulset.pro_poseapp.utils.eventlog.CaptureEventData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

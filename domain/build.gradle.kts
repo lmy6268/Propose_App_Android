@@ -11,6 +11,5 @@ dependencies {
     implementation(libs.bundles.android.core)
     testImplementation(libs.junit)
     androidTestImplementation(libs.bundles.android.test)
-    implementation(projects.utils)
     implementation(libs.bundles.cameraX)
 }

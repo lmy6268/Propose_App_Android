@@ -6,7 +6,7 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.MeteringPoint
 import androidx.camera.core.Preview
 import androidx.lifecycle.LifecycleOwner
-import com.hanadulset.pro_poseapp.utils.camera.CameraState
+import com.hanadulset.pro_poseapp.domain.model.camera.CameraStateModel
 
 /**
  * 카메라를 조작하는 데이터 소스
@@ -20,7 +20,7 @@ interface CameraDataSource {
         aspectRatio: Int,
         previewRotation: Int,
         analyzer: ImageAnalysis.Analyzer
-    ): CameraState
+    ): CameraStateModel
 
     suspend fun takePhoto(): ImageProxy
     fun setZoomLevel(zoomLevel: Float)

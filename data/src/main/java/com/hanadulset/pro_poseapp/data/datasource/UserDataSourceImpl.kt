@@ -8,7 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.hanadulset.pro_poseapp.data.datasource.interfaces.UserDataSource
-import com.hanadulset.pro_poseapp.utils.UserSet
+import com.hanadulset.pro_poseapp.domain.model.UserSetModel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.decodeFromString
@@ -20,22 +20,22 @@ import kotlinx.serialization.json.Json
 @SuppressLint("HardwareIds")
 class UserDataSourceImpl(private val applicationContext: Context) : UserDataSource {
 
-    override suspend fun saveUserSet(userSet: UserSet) {
+    override suspend fun saveUserSet(userSet: UserSetModel) {
         applicationContext.dataStore.edit { preferences ->
-            preferences[stringPreferencesKey(UserSet::class.simpleName ?: "UserSet")] =
+            preferences[stringPreferencesKey(UserSetModel::class.simpleName ?: "UserSetModel")] =
                 Json.encodeToString(userSet)
         }
 
     }
 
-    override suspend fun loadUserSet(): UserSet {
+    override suspend fun loadUserSet(): UserSetModel {
         val value = applicationContext.dataStore.data.map { preferences ->
-            preferences[stringPreferencesKey(UserSet::class.simpleName ?: "UserSet")]
+            preferences[stringPreferencesKey(UserSetModel::class.simpleName ?: "UserSetModel")]
         }.first()
         return if (value != null)
             Json.decodeFromString(value)
         else {
-            val userSet = UserSet()
+            val userSet = UserSetModel()
             saveUserSet(userSet)
             userSet
         }

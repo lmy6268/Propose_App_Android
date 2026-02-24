@@ -17,7 +17,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.hanadulset.pro_poseapp.data.datasource.interfaces.CameraDataSource
-import com.hanadulset.pro_poseapp.utils.camera.CameraState
+import com.hanadulset.pro_poseapp.domain.model.camera.CameraStateModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -47,7 +47,7 @@ class CameraDataSourceImpl(private val context: Context) : CameraDataSource {
         aspectRatio: Int,
         previewRotation: Int,
         analyzer: Analyzer
-    ): CameraState = suspendCancellableCoroutine { cont ->
+    ): CameraStateModel = suspendCancellableCoroutine { cont ->
         prepareCamera(
             lifecycleOwner,
             surfaceProvider,
@@ -56,14 +56,14 @@ class CameraDataSourceImpl(private val context: Context) : CameraDataSource {
             analyzer
         ).onSuccess {
             cont.resume(
-                CameraState(
+                CameraStateModel(
                     CAMERA_INIT_COMPLETE,
                     imageAnalyzerResolution = imageAnalysis.resolutionInfo?.resolution
                 )
             )
         }.onFailure {
             cont.resume(
-                CameraState(CAMERA_INIT_ERROR, it.cause as? Exception, it.message)
+                CameraStateModel(CAMERA_INIT_ERROR, it.cause as? Exception, it.message)
             )
         }
 
