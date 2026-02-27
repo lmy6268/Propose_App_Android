@@ -2,9 +2,8 @@ package com.hanadulset.pro_poseapp.presentation.feature.splash
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.hanadulset.pro_poseapp.domain.usecase.CheckUserSuccessToUseUseCase
-import com.hanadulset.pro_poseapp.domain.usecase.PreLoadModelUseCase
-import com.hanadulset.pro_poseapp.domain.usecase.SaveUserSuccessToUseUseCase
+import com.hanadulset.pro_poseapp.domain.usecase.AiUseCases
+import com.hanadulset.pro_poseapp.domain.usecase.UserUseCases
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,12 +12,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PrepareServiceViewModel @Inject constructor(
-    private val preLoadModelUseCase: PreLoadModelUseCase,
-    private val saveUserSuccessToUseUseCase: SaveUserSuccessToUseUseCase,
-    private val checkUserSuccessToUseUseCase: CheckUserSuccessToUseUseCase,
-
-    ) : ViewModel() {
-
+    private val aiUseCases: AiUseCases,
+    private val userUseCases: UserUseCases
+) : ViewModel() {
 
     private val _totalLoadedState = MutableStateFlow(false)
     private val _modelLoadedState = MutableStateFlow(false)
@@ -32,7 +28,7 @@ class PrepareServiceViewModel @Inject constructor(
     fun preLoadModel() {
         _modelLoadedState.value = false
         viewModelScope.launch {
-            _modelLoadedState.value = preLoadModelUseCase()
+            _modelLoadedState.value = aiUseCases.preLoadModelUseCase()
             checkLoadAllPreRunMethod()
         }
 
@@ -40,13 +36,13 @@ class PrepareServiceViewModel @Inject constructor(
 
     fun successToUse() {
         viewModelScope.launch {
-            saveUserSuccessToUseUseCase()
+            userUseCases.saveUserSuccessToUseUseCase()
         }
     }
 
     fun checkToUse() {
         viewModelScope.launch {
-            _checkUserSuccess.value = checkUserSuccessToUseUseCase()
+            _checkUserSuccess.value = userUseCases.checkUserSuccessToUseUseCase()
         }
     }
 

@@ -1,10 +1,8 @@
 package com.hanadulset.pro_poseapp.presentation.feature.gallery
 
-import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.hanadulset.pro_poseapp.domain.usecase.gallery.DeleteImageFromPicturesUseCase
-import com.hanadulset.pro_poseapp.domain.usecase.gallery.GetImagesFromPicturesUseCase
+import com.hanadulset.pro_poseapp.domain.usecase.GalleryUseCases
 import com.hanadulset.pro_poseapp.utils.camera.ImageResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,32 +13,26 @@ import javax.inject.Inject
 
 @HiltViewModel
 class GalleryViewModel @Inject constructor(
-    //UseCases
-    //이미지 목록 불러오는 유스케이스
-    private val getImagesFromPicturesUseCase: GetImagesFromPicturesUseCase,
-    private val deleteImageFromPicturesUseCase: DeleteImageFromPicturesUseCase
-    //특정 이미지 삭제하는 유스케이스
+    private val galleryUseCases: GalleryUseCases
 ) : ViewModel() {
     private val _capturedImageState = MutableStateFlow<List<ImageResult>?>(null)
-    val capturedImageState = _capturedImageState.asStateFlow() //UI 단에서 사용할 때
+    val capturedImageState = _capturedImageState.asStateFlow()
     private val _deleteCompleteState = MutableStateFlow<Boolean?>(null)
     val deleteCompleteState = _deleteCompleteState.asStateFlow()
 
 
-    //이미지목록을 불러온다.
     fun loadImages() {
         _capturedImageState.value = null
         viewModelScope.launch {
-            _capturedImageState.value = getImagesFromPicturesUseCase() //이미지 목록을 가져옴 .
+            _capturedImageState.value = galleryUseCases.getImagesFromPicturesUseCase()
         }
     }
 
-    //이미지 삭제
     fun deleteImage(index: Int, isOnDialog: Boolean) {
         _deleteCompleteState.value = false
         viewModelScope.launch {
             val checkState =
-                if (isOnDialog.not()) deleteImageFromPicturesUseCase(uri = _capturedImageState.value!![index].dataUri!!)
+                if (isOnDialog.not()) galleryUseCases.deleteImageFromPicturesUseCase(uri = _capturedImageState.value!![index].dataUri!!)
                 else isOnDialog
             if (checkState) {
                 _capturedImageState.update {

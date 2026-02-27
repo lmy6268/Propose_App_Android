@@ -15,20 +15,10 @@ import androidx.compose.ui.geometry.center
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.hanadulset.pro_poseapp.domain.usecase.GetPoseFromImageUseCase
-import com.hanadulset.pro_poseapp.domain.usecase.LoadUserSetUseCase
-import com.hanadulset.pro_poseapp.domain.usecase.SaveUserSetUseCase
-import com.hanadulset.pro_poseapp.domain.usecase.ai.RecommendCompInfoUseCase
-import com.hanadulset.pro_poseapp.domain.usecase.ai.RecommendPoseUseCase
-import com.hanadulset.pro_poseapp.domain.usecase.camera.BindCameraUseCase
-import com.hanadulset.pro_poseapp.domain.usecase.camera.CaptureImageUseCase
-import com.hanadulset.pro_poseapp.domain.usecase.camera.GetLatestImageUseCase
-import com.hanadulset.pro_poseapp.domain.usecase.camera.SetFocusUseCase
-import com.hanadulset.pro_poseapp.domain.usecase.camera.SetZoomLevelUseCase
-import com.hanadulset.pro_poseapp.domain.usecase.camera.ShowFixedScreenUseCase
-import com.hanadulset.pro_poseapp.domain.usecase.camera.tracking.StopPointOffsetUseCase
-import com.hanadulset.pro_poseapp.domain.usecase.camera.tracking.UpdatePointOffsetUseCase
-import com.hanadulset.pro_poseapp.domain.usecase.gallery.DeleteImageFromPicturesUseCase
+import com.hanadulset.pro_poseapp.domain.usecase.AiUseCases
+import com.hanadulset.pro_poseapp.domain.usecase.CameraUseCases
+import com.hanadulset.pro_poseapp.domain.usecase.GalleryUseCases
+import com.hanadulset.pro_poseapp.domain.usecase.UserUseCases
 import com.hanadulset.pro_poseapp.utils.ImageUtils
 import com.hanadulset.pro_poseapp.utils.UserSet
 import com.hanadulset.pro_poseapp.utils.camera.CameraState
@@ -48,22 +38,10 @@ import javax.inject.Inject
 @ExperimentalGetImage
 @HiltViewModel
 class CameraViewModel @Inject constructor(
-    //UseCases
-    private val bindCameraUseCase: BindCameraUseCase,
-    private val captureImageUseCase: CaptureImageUseCase,
-    private val showFixedScreenUseCase: ShowFixedScreenUseCase,
-    private val setZoomLevelUseCase: SetZoomLevelUseCase,
-    private val recommendCompInfoUseCase: RecommendCompInfoUseCase,
-    private val recommendPoseUseCase: RecommendPoseUseCase,
-    private val getLatestImageUseCase: GetLatestImageUseCase,
-    private val getPoseFromImageUseCase: GetPoseFromImageUseCase,
-    private val setFocusUseCase: SetFocusUseCase,
-    private val updatePointOffsetUseCase: UpdatePointOffsetUseCase,
-    private val stopPointOffsetUseCase: StopPointOffsetUseCase,
-    private val loadUserSetUseCase: LoadUserSetUseCase,
-    private val saveUserSetUseCase: SaveUserSetUseCase,
-    private val deleteImageFromPicturesUseCase: DeleteImageFromPicturesUseCase
-
+    private val cameraUseCases: CameraUseCases,
+    private val aiUseCases: AiUseCases,
+    private val userUseCases: UserUseCases,
+    private val galleryUseCases: GalleryUseCases
 ) : ViewModel() {
 
     private val _trackingSwitchON = MutableStateFlow(false)
@@ -76,7 +54,7 @@ class CameraViewModel @Inject constructor(
                     val backgroundBitmap = _bitmapState.value ?: return@collect
                     //이미지 사용하기
                     val analyzedImageSize = Size(backgroundBitmap.width, backgroundBitmap.height)
-                    val res = updatePointOffsetUseCase(
+                    val res = cameraUseCases.updatePointOffsetUseCase(
                         targetOffset = convertAnalyzedOffsetToPreviewOffset(
                             reversed = true, offset = SizeF(
                                 _modifiedPointState.value!!.x, _modifiedPointState.value!!.y
@@ -118,17 +96,13 @@ class CameraViewModel @Inject constructor(
     private val _previewState = MutableStateFlow(CameraState(CameraState.CAMERA_INIT_NOTHING))
 
 
-    private val _capturedBitmapState = MutableStateFlow<Uri?>( //캡쳐된 이미지 상태
-        null
-    )
+    private val _capturedBitmapState = MutableStateFlow<Uri?>(null)
     private val _poseResultState = MutableStateFlow<MutableList<PoseData>?>(null)
     private val _fixedScreenState = MutableStateFlow<Bitmap?>(null)
     private val _modifiedPointState = MutableStateFlow<Offset?>(null)
 
     val pointOffsetState = _modifiedPointState.asStateFlow()
 
-
-    //State Getter
 
     val capturedBitmapState = _capturedBitmapState.asStateFlow()
     val poseResultState = _poseResultState.asStateFlow()
@@ -144,7 +118,6 @@ class CameraViewModel @Inject constructor(
     private val _poseOnRecommend = MutableStateFlow(false)
 
 
-    //매 프레임의 image를 수신함.
     private val imageAnalyzer = ImageAnalysis.Analyzer { imageProxy ->
         imageProxy.use {
             _bitmapState.value = ImageUtils.imageToBitmap(it.image!!, it.imageInfo.rotationDegrees)
@@ -156,13 +129,13 @@ class CameraViewModel @Inject constructor(
     private fun convertAnalyzedOffsetToPreviewOffset(
         reversed: Boolean, offset: SizeF, analyzedImageSize: Size
     ): SizeF {
-        return if (reversed) //preview -> analyzed
+        return if (reversed)
             offset.let {
                 SizeF(
                     (it.width / previewSizeState!!.width) * analyzedImageSize.width,
                     (it.height / previewSizeState!!.height) * analyzedImageSize.height
                 )
-            } else offset.let {// analyzed -> preview
+            } else offset.let {
             SizeF(
                 (it.width / analyzedImageSize.width) * previewSizeState!!.width,
                 (it.height / analyzedImageSize.height) * previewSizeState!!.height
@@ -177,9 +150,9 @@ class CameraViewModel @Inject constructor(
         previewRotation: Int
     ) {
         _previewState.value =
-            CameraState(cameraStateId = CameraState.CAMERA_INIT_ON_PROCESS) // OnProgress
+            CameraState(cameraStateId = CameraState.CAMERA_INIT_ON_PROCESS)
         viewModelScope.launch {
-            val res = bindCameraUseCase(
+            val res = cameraUseCases.bindCameraUseCase(
                 lifecycleOwner,
                 surfaceProvider,
                 aspectRatio = aspectRatioState.value.aspectRatioType,
@@ -192,7 +165,7 @@ class CameraViewModel @Inject constructor(
 
     fun getPhoto(captureEventData: CaptureEventData) {
         viewModelScope.launch {
-            _capturedBitmapState.value = captureImageUseCase(captureEventData)
+            _capturedBitmapState.value = cameraUseCases.captureImageUseCase(captureEventData)
         }
     }
 
@@ -200,12 +173,12 @@ class CameraViewModel @Inject constructor(
 
     fun reqPoseRecommend() {
         if (_poseOnRecommend.value.not()) {
-            _poseOnRecommend.value = true //포즈 추천이 시작됨을 알림
+            _poseOnRecommend.value = true
             _poseResultState.value = null
             if (_bitmapDemandNow.value.not()) _bitmapDemandNow.value = true
             viewModelScope.launch {
                 _bitmapState.value?.let { bitmap ->
-                    val recommendedData = recommendPoseUseCase(bitmap)
+                    val recommendedData = aiUseCases.recommendPoseUseCase(bitmap)
                     _poseResultState.update {
                         recommendedData.poseDataList.apply {
                             add(0, PoseData(poseId = -1, -1))
@@ -220,7 +193,6 @@ class CameraViewModel @Inject constructor(
                     }
 
                     _poseOnRecommend.value = false
-                    //포즈 추천이 끝남을 알림
                 }
             }
         }
@@ -228,7 +200,6 @@ class CameraViewModel @Inject constructor(
 
 
     private fun trackToNewOffset() {
-        //구도 추천 로직
         if (_trackingSwitchON.value && _modifiedPointState.value != null) {
             _trackingTrigger.trySend(Unit)
         }
@@ -240,7 +211,7 @@ class CameraViewModel @Inject constructor(
         _trackingSwitchON.value = true
         viewModelScope.launch {
             _bitmapState.value?.let { bitmap ->
-                recommendCompInfoUseCase(bitmap).let { res ->
+                aiUseCases.recommendCompInfoUseCase(bitmap).let { res ->
                     _modifiedPointState.update {
                         previewSizeState!!.center.let {
                             Offset(
@@ -258,10 +229,10 @@ class CameraViewModel @Inject constructor(
     fun stopToTrack() {
         _trackingSwitchON.update { false }
         _modifiedPointState.update { null }
-        stopPointOffsetUseCase()
+        cameraUseCases.stopPointOffsetUseCase()
     }
 
-    fun setZoomLevel(zoomLevel: Float) = setZoomLevelUseCase(zoomLevel)
+    fun setZoomLevel(zoomLevel: Float) = cameraUseCases.setZoomLevelUseCase(zoomLevel)
 
     fun changeViewRate(idx: Int): Boolean {
         val res = _aspectRatioState.value.aspectRatioType == viewRateList[idx].aspectRatioType
@@ -274,7 +245,7 @@ class CameraViewModel @Inject constructor(
         if (isRequest) {
             viewModelScope.launch {
                 _bitmapState.value?.let { backgroundBitmap ->
-                    _fixedScreenState.value = showFixedScreenUseCase(
+                    _fixedScreenState.value = cameraUseCases.showFixedScreenUseCase(
                         backgroundBitmap = backgroundBitmap
                     )
                 }
@@ -286,35 +257,34 @@ class CameraViewModel @Inject constructor(
     fun getPoseFromImage(uri: Uri) {
         viewModelScope.launch {
             _fixedScreenState.value = null
-            val res = getPoseFromImageUseCase(uri)
+            val res = aiUseCases.getPoseFromImageUseCase(uri)
             _fixedScreenState.value = res
             Log.d("따오기 이미지: ", uri.toString())
-            deleteImageFromPicturesUseCase(uri)
+            galleryUseCases.deleteImageFromPicturesUseCase(uri)
         }
     }
 
 
-    //최근 이미지 불러오기
     fun getLastImage() {
         viewModelScope.launch {
-            _capturedBitmapState.value = getLatestImageUseCase()
+            _capturedBitmapState.value = cameraUseCases.getLatestImageUseCase()
         }
     }
 
     fun setFocus(meteringPoint: MeteringPoint, durationMilliSeconds: Long) {
-        setFocusUseCase(meteringPoint, durationMilliSeconds)
+        cameraUseCases.setFocusUseCase(meteringPoint, durationMilliSeconds)
     }
 
 
     fun loadUserSet() {
         viewModelScope.launch {
-            _userSetState.update { loadUserSetUseCase() }
+            _userSetState.update { userUseCases.loadUserSetUseCase() }
         }
     }
 
     fun saveUserSet(userSet: UserSet) {
         viewModelScope.launch {
-            saveUserSetUseCase(userSet = userSet)
+            userUseCases.saveUserSetUseCase(userSet = userSet)
         }
     }
 
