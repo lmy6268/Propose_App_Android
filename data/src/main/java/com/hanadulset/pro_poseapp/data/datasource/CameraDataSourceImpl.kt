@@ -16,18 +16,15 @@ import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.google.common.util.concurrent.ListenableFuture
 import com.hanadulset.pro_poseapp.data.datasource.interfaces.CameraDataSource
 import com.hanadulset.pro_poseapp.utils.camera.CameraState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import org.opencv.android.OpenCVLoader
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 
 class CameraDataSourceImpl(private val context: Context) : CameraDataSource {
@@ -166,7 +163,7 @@ class CameraDataSourceImpl(private val context: Context) : CameraDataSource {
         return try {
             cameraProvider.unbindAll()
             true
-        } catch (exc: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
@@ -186,7 +183,6 @@ class CameraDataSourceImpl(private val context: Context) : CameraDataSource {
                 .setAutoCancelDuration(durationMilliSeconds, TimeUnit.MILLISECONDS)
                 .build()
         )
-
 
     }
 

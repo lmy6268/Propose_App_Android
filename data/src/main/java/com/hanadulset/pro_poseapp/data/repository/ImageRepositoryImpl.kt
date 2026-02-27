@@ -6,8 +6,8 @@ import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
-import android.util.Size
 import android.util.SizeF
+import androidx.core.graphics.scale
 import com.hanadulset.pro_poseapp.data.datasource.FileHandleDataSourceImpl
 import com.hanadulset.pro_poseapp.data.datasource.ImageProcessDataSourceImpl
 import com.hanadulset.pro_poseapp.data.datasource.ModelRunnerDataSourceDataSourceImpl
@@ -21,7 +21,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import androidx.core.graphics.scale
 
 @Singleton
 class ImageRepositoryImpl @Inject constructor(@param:ApplicationContext private val applicationContext: Context) :
@@ -80,27 +79,28 @@ class ImageRepositoryImpl @Inject constructor(@param:ApplicationContext private 
 
     //이미지에서 포즈를 가져오기
     override suspend fun getPoseFromImage(uri: Uri?): Bitmap? = withContext(Dispatchers.IO) {
-        if (uri != null) {
+        uri?.let { targetUri ->
+            val contentResolver = applicationContext.contentResolver
             val backgroundBitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                ImageDecoder.decodeBitmap(
-                    ImageDecoder.createSource(
-                        applicationContext.contentResolver,
-                        uri
-                    )
-                )
+                ImageDecoder.decodeBitmap(ImageDecoder.createSource(contentResolver, targetUri))
             } else {
-                MediaStore.Images.Media.getBitmap(applicationContext.contentResolver, uri)
+                @Suppress("DEPRECATION")
+                MediaStore.Images.Media.getBitmap(contentResolver, targetUri)
             }
 
-            backgroundBitmap.copy(Bitmap.Config.RGB_565, true).run {
-                val scaledSize = if (width / height.toFloat() == 9 / 16F) Size(720, 1280) else Size(480, 640)
-                this.scale(scaledSize.width, scaledSize.height, false).let {
-                    getFixedScreen(it).apply {
-                        it.recycle()
+            backgroundBitmap.copy(Bitmap.Config.RGB_565, true).let { source ->
+                val is16By9 = source.width / source.height.toFloat() == 9 / 16F
+                val (w, h) = if (is16By9) 720 to 1280 else 480 to 640
+
+                source.scale(w, h).let { scaled ->
+                    getFixedScreen(scaled).also {
+                        scaled.recycle()
+                        source.recycle()
+                        if (backgroundBitmap != source) backgroundBitmap.recycle()
                     }
                 }
             }
-        } else null
+        }
     }
 
     override suspend fun loadAllCapturedImages(): List<ImageResult> = withContext(Dispatchers.IO) {
