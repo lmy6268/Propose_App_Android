@@ -1,6 +1,5 @@
 package com.hanadulset.pro_poseapp.data.datasource.interfaces
 
-import android.net.Uri
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.MeteringPoint
@@ -25,4 +24,5 @@ interface CameraDataSource {
     suspend fun takePhoto(): ImageProxy
     fun setZoomLevel(zoomLevel: Float)
     fun setFocus(meteringPoint: MeteringPoint, durationMilliSeconds: Long)
+    fun unbindCameraResources(): Boolean
 }
