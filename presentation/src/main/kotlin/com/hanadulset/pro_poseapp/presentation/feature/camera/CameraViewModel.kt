@@ -285,6 +285,7 @@ class CameraViewModel @Inject constructor(
     fun saveUserSet(userSet: UserSet) {
         viewModelScope.launch {
             userUseCases.saveUserSetUseCase(userSet = userSet)
+
         }
     }
 

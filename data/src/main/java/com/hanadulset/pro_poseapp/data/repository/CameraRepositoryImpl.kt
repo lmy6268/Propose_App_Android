@@ -21,6 +21,7 @@ import com.hanadulset.pro_poseapp.utils.camera.CameraState
 import com.hanadulset.pro_poseapp.utils.eventlog.AnalyticsManager
 import com.hanadulset.pro_poseapp.utils.eventlog.CaptureEventData
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -100,7 +101,7 @@ class CameraRepositoryImpl @Inject constructor(
         cameraDataSource.unbindCameraResources()
 
     private suspend fun estimatePose(bitmap: Bitmap): List<Triple<Float, Float, Float>?> =
-        suspendCoroutine { cont ->
+        suspendCancellableCoroutine { cont ->
             val options = AccuratePoseDetectorOptions.Builder()
                 .setDetectorMode(AccuratePoseDetectorOptions.SINGLE_IMAGE_MODE)
                 .build()

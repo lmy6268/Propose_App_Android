@@ -1,12 +1,20 @@
 package com.hanadulset.pro_poseapp.data.datasource.impls
 
 import android.content.Context
-import androidx.camera.core.*
+import androidx.camera.core.Camera
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.FocusMeteringAction
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageAnalysis.Analyzer
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
+import androidx.camera.core.MeteringPoint
+import androidx.camera.core.Preview
 import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.core.content.ContextCompat
+import androidx.concurrent.futures.await
 import androidx.lifecycle.LifecycleOwner
 import com.hanadulset.pro_poseapp.data.datasource.interfaces.CameraDataSource
 import com.hanadulset.pro_poseapp.utils.camera.CameraState
@@ -14,6 +22,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asExecutor
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.coroutines.resume
@@ -25,9 +34,8 @@ class CameraDataSourceImpl @Inject constructor(
     private lateinit var preview: Preview
     private var imageCapture: ImageCapture? = null
     private lateinit var imageAnalysis: ImageAnalysis
-    
+
     private val analysisExecutor = Dispatchers.Default.asExecutor()
-    private val mainExecutor = ContextCompat.getMainExecutor(context)
 
     private lateinit var camera: Camera
     private lateinit var cameraProvider: ProcessCameraProvider
@@ -38,18 +46,30 @@ class CameraDataSourceImpl @Inject constructor(
         aspectRatio: Int,
         previewRotation: Int,
         analyzer: Analyzer
-    ): CameraState = suspendCancellableCoroutine { cont ->
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-        cameraProviderFuture.addListener({
-            try {
-                cameraProvider = cameraProviderFuture.get()
-                bindCameraUseCases(lifecycleOwner, surfaceProvider, previewRotation, aspectRatio, analyzer)
-                cont.resume(CameraState(CAMERA_INIT_COMPLETE, imageAnalyzerResolution = imageAnalysis.resolutionInfo?.resolution))
-            } catch (e: Exception) {
-                cont.resume(CameraState(CAMERA_INIT_ERROR, e, e.message))
-            }
-        }, mainExecutor)
-    }
+    ): CameraState =
+        withContext(Dispatchers.Main) {
+            val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+            cameraProvider = cameraProviderFuture.await()
+            bindCameraUseCases(lifecycleOwner,surfaceProvider,previewRotation,aspectRatio,analyzer)
+        }.runCatching {
+            CameraState(CAMERA_INIT_COMPLETE, imageAnalyzerResolution = imageAnalysis.resolutionInfo?.resolution)
+        }.getOrElse {
+            val e = it as Exception
+            CameraState(CAMERA_INIT_ERROR, e, e.message)
+        }
+//
+//        suspendCancellableCoroutine { cont ->
+//        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+//        cameraProviderFuture.addListener({
+//            try {
+//                cameraProvider = cameraProviderFuture.get()
+//                bindCameraUseCases(lifecycleOwner, surfaceProvider, previewRotation, aspectRatio, analyzer)
+//                cont.resume(CameraState(CAMERA_INIT_COMPLETE, imageAnalyzerResolution = imageAnalysis.resolutionInfo?.resolution))
+//            } catch (e: Exception) {
+//                cont.resume()
+//            }
+//        }, mainExecutor)
+//    }
 
     private fun bindCameraUseCases(
         lifecycleOwner: LifecycleOwner,
@@ -58,9 +78,15 @@ class CameraDataSourceImpl @Inject constructor(
         aspectRatio: Int,
         analyzer: Analyzer
     ) {
-        val cameraSelector = CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
+        val cameraSelector =
+            CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()
         val resolutionSelector = ResolutionSelector.Builder()
-            .setAspectRatioStrategy(AspectRatioStrategy(aspectRatio, AspectRatioStrategy.FALLBACK_RULE_AUTO))
+            .setAspectRatioStrategy(
+                AspectRatioStrategy(
+                    aspectRatio,
+                    AspectRatioStrategy.FALLBACK_RULE_AUTO
+                )
+            )
             .build()
 
         preview = Preview.Builder()
@@ -82,14 +108,21 @@ class CameraDataSourceImpl @Inject constructor(
             .build().apply { setAnalyzer(analysisExecutor, analyzer) }
 
         cameraProvider.unbindAll()
-        camera = cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageCapture, imageAnalysis)
+        camera = cameraProvider.bindToLifecycle(
+            lifecycleOwner,
+            cameraSelector,
+            preview,
+            imageCapture,
+            imageAnalysis
+        )
     }
 
     override suspend fun takePhoto() = suspendCancellableCoroutine { cont ->
-        imageCapture?.takePicture(mainExecutor, object : ImageCapture.OnImageCapturedCallback() {
+        imageCapture?.takePicture(analysisExecutor, object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
                 cont.resume(image)
             }
+
             override fun onError(exception: ImageCaptureException) {
                 cont.resumeWithException(exception)
             }
@@ -100,7 +133,9 @@ class CameraDataSourceImpl @Inject constructor(
         return try {
             if (::cameraProvider.isInitialized) cameraProvider.unbindAll()
             true
-        } catch (_: Exception) { false }
+        } catch (_: Exception) {
+            false
+        }
     }
 
     override fun setZoomLevel(zoomLevel: Float) {

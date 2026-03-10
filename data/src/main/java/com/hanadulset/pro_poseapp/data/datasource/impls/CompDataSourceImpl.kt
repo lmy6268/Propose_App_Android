@@ -34,7 +34,7 @@ class CompDataSourceImpl @Inject constructor(
         module = LiteModuleLoader.load(file.absolutePath)
     }
 
-    override suspend fun recommendCompData(backgroundBitmap: Bitmap): Pair<Float, Float> = withContext(Dispatchers.IO) {
+    override suspend fun recommendCompData(backgroundBitmap: Bitmap): Pair<Float, Float> = withContext(Dispatchers.Default) {
         val model = module ?: return@withContext Pair(0f, 0f)
         val resized = visionDS.resizeBitmapWithOpenCV(backgroundBitmap, Size(224.0, 224.0))
         val tensor = TensorImageUtils.bitmapToFloat32Tensor(

@@ -18,6 +18,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -74,20 +75,28 @@ object CameraScreenCompScreen {
                 )
             }
         )
-
-        Box(modifier = localModifier
-            .onGloballyPositioned { coordinates ->
-                coordinates.size.let {
-                    with(localDensity) {
-                        compSize.value = DpSize(
-                            it.width.toDp(), it.height.toDp()
-                        )
+        Box(
+            modifier = localModifier
+                .onGloballyPositioned { coordinates ->
+                    coordinates.size.let {
+                        with(localDensity) {
+                            compSize.value = DpSize(
+                                it.width.toDp(), it.height.toDp()
+                            )
+                        }
                     }
-                }
-            }) {
+                }) {
             if (compSize.value != null) {
-                //구도 추천 포인트 표시
-                if (isPointOn.value && pointOffSet() != null)
+                // 이제 센서는 화면이 켜져 있는 동안 딱 한 번만 등록됩니다.
+                SensorTrigger(
+                    enabled = !isPointOn.value // 포인트가 없을 때만 흔들림 감지 로직 작동
+                ) {
+                    isPointOn.value = true
+                    triggerPoint(compSize.value!!)
+                }
+
+                // 구도 추천 포인트 표시
+                if (isPointOn.value && pointOffSet() != null) {
                     CompGuidePoint(
                         areaSize = { compSize.value!! },
                         pointOffSetState = { pointOffSet()!! },
@@ -95,18 +104,17 @@ object CameraScreenCompScreen {
                             onPointMatched { horizonState.value }
                         },
                         isOnHorizon = { horizonState.value },
-                        onStopToTracking = { stopToTracking() }
+                        onStopToTracking = {
+                            // 포인트 추적 중단 시 다시 센서가 작동할 수 있게 상태 변경
+                            isPointOn.value = false
+                            stopToTracking()
+                        }
                     )
-                else {
-                    //흔들림 감지 -> 구도 포인트가 없을 때만, 흔들림을 감지 하기 시작한다.
-                    SensorTrigger {
-                        isPointOn.value = true
-                        triggerPoint(compSize.value!!)
-                    }
                 }
 
                 //수평계
-                HorizontalCheckModule(modifier = localModifier,
+                HorizontalCheckModule(
+                    modifier = localModifier,
                     isShowHorizontalCheck = { compSize.value != null },
                     centerRadius = horizontalCheckCircleRadius,
                     centroid = with(localDensity) {
@@ -122,6 +130,7 @@ object CameraScreenCompScreen {
                 )
             }
         }
+
 
     }
 
@@ -173,11 +182,6 @@ object CameraScreenCompScreen {
         }
         val onHorizon by rememberUpdatedState(newValue = isOnHorizon)
 
-        //PointOffsetState 값은 계속해서 들어온다.
-        // -> 해당 값을 연산해서, 붙이던지 말던지 한다.
-
-        //만약, 들어온 값이 가까운 거리에 있는 경우, 포인트를 가운데로 옮긴다.
-        // null값이 들어오는 경우, 그리는 것을 중단한다.
         if (pointOffSetState() != null) {
             //현재 구도 포인트의 위치
             val pointOffset = rememberUpdatedState {
@@ -251,76 +255,84 @@ object CameraScreenCompScreen {
 
     @Composable
     fun SensorTrigger(
+        enabled: Boolean, // 활성화 여부 추가
         onTracking: () -> Unit,
     ) {
         val context = LocalContext.current
-        val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        val gyroscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+        // 1. 센서 관련 객체들을 remember로 감싸서 재구성(Recomposition) 시 재생성 방지
+        val sensorManager =
+            remember { context.getSystemService(Context.SENSOR_SERVICE) as SensorManager }
+        val gyroscopeSensor = remember { sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE) }
 
-        val comboNonShakingDTThreshold = 0.4F //Dt
+        val comboNonShakingDTThreshold = 0.4F // 유지 시간 임계값
 
-        val timestamp = remember {
-            mutableFloatStateOf(0.0F)
-        }
-        val shakeState = remember {
-            mutableStateOf(true)
-        }
+        // 2. timestamp를 Long으로 변경하여 정밀도 유지 및 FloatState로 관리
+        val timestamp = remember { mutableLongStateOf(0L) }
+        val shakeState = remember { mutableStateOf(true) }
 
+        // 3. comboDT를 remember로 관리하여 리렌더링 시에도 값이 초기화되지 않게 함
+        val comboDT = remember { mutableFloatStateOf(0f) }
 
-        var comboDT = 0F
-
-        val sensorListener = remember{ object : SensorEventListener {
+        val sensorListener = remember {
+            object : SensorEventListener {
                 override fun onSensorChanged(event: SensorEvent) {
-                    when (event.sensor.type) {
-                        Sensor.TYPE_GYROSCOPE -> {
-                            val (x, y, z) = event.values
+                    if (!enabled) return // [추가] enabled가 false면 계산하지 않고 리
+                    if (event.sensor.type == Sensor.TYPE_GYROSCOPE) {
+                        val (x, y, z) = event.values
+                        val currentEventTime = event.timestamp
+
+                        if (timestamp.longValue != 0L) {
+                            // 나노초(ns)를 초(s) 단위로 변환
                             val dt =
-                                (event.timestamp - timestamp.floatValue) * (1.0F / 1000000000.0F)
-                            timestamp.floatValue = event.timestamp.toFloat()
-                            if (dt - timestamp.floatValue * (1.0F / 1000000000.0F) != 0F) {
+                                (currentEventTime - timestamp.longValue) * (1.0F / 1000000000.0F)
+
+                            // dt가 너무 작거나 0인 경우 계산 건너빰
+                            if (dt > 0) {
                                 val dx = abs(x * dt * 1000)
                                 val dy = abs(y * dt * 1000)
                                 val dz = abs(z * dt * 1000)
-                                //만약 흔들림 방지턱을 넘은 경우
                                 val magnitude = dx * dx + dy * dy + dz * dz
+
                                 if (magnitude < SHAKE_THRESHOLD_DISTANCE) {
-                                    //흔들린 이후, 연속적으로 흔들리지 않았다는 데이터가 30개 이상 전달된 경우
-                                    if (shakeState.value && comboDT >= comboNonShakingDTThreshold) {
-                                        shakeState.value = false //흔들리지 않음 상태로 변경한다.
-                                        comboDT = 0F//cnt 개수를 초기화 한다.
-                                    } else comboDT += dt//흔들리지 않았다는 데이터의 개수를 1증가
+                                    // 흔들림이 멈춘 상태가 임계값(0.4초) 이상 지속되었는지 확인
+                                    if (shakeState.value && comboDT.floatValue >= comboNonShakingDTThreshold) {
+                                        shakeState.value = false // 흔들림 멈춤 상태로 변경
+                                        comboDT.floatValue = 0f
+                                    } else {
+                                        comboDT.floatValue += dt
+                                    }
                                 } else {
-                                    if (shakeState.value.not()) shakeState.value = true
-                                    //연속적으로 흔들리지 않음 상태를 만족시키지 못했으므로
-                                    else comboDT = 0F
+                                    // 다시 흔들림이 감지되면 상태 초기화
+                                    if (!shakeState.value) shakeState.value = true
+                                    comboDT.floatValue = 0f
                                 }
                             }
                         }
-
-                        else -> {
-
-                        }
+                        timestamp.longValue = currentEventTime
                     }
                 }
 
-                override fun onAccuracyChanged(sensor: Sensor, accurancy: Int) {}
+                override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
             }
         }
 
-        LaunchedEffect(key1 = shakeState.value) {
-            if (shakeState.value.not()) onTracking()
-        }
-
-        LaunchedEffect(shakeState.value) {
+        // 4. [핵심] 리스너 등록 및 해제는 컴포저블의 생명주기에만 맞춤 (Unit 사용)
+        // shakeState.value가 바뀐다고 해서 register/unregister를 반복하지 않음
+        DisposableEffect(Unit) {
             sensorManager.registerListener(
-                sensorListener, gyroscopeSensor, SensorManager.SENSOR_DELAY_NORMAL
+                sensorListener,
+                gyroscopeSensor,
+                SensorManager.SENSOR_DELAY_NORMAL
             )
+            onDispose {
+                sensorManager.unregisterListener(sensorListener)
+            }
         }
 
-        //리스너 등록
-        DisposableEffect(shakeState.value.not()) {
-            onDispose {
-                sensorManager.unregisterListener(sensorListener, gyroscopeSensor)
+        // 5. shakeState가 false가 되는 순간(흔들림 멈춤)에만 콜백 실행
+        LaunchedEffect(shakeState.value) {
+            if (!shakeState.value) {
+                onTracking()
             }
         }
     }
@@ -329,7 +341,7 @@ object CameraScreenCompScreen {
     // 수평계 모듈
     @Composable
     fun HorizontalCheckModule(
-        isShowHorizontalCheck:()->Boolean = {false},
+        isShowHorizontalCheck: () -> Boolean = { false },
         modifier: Modifier = Modifier,
         centerRadius: Float,
         centroid: Offset,
@@ -344,7 +356,7 @@ object CameraScreenCompScreen {
         }
         val angleThreshold = 5
 
-        val rotationEventListener = remember{
+        val rotationEventListener = remember {
             object : OrientationEventListener(context.applicationContext) {
                 override fun onOrientationChanged(orientation: Int) {
                     // -1이 나오면 측정을 중지한다.
