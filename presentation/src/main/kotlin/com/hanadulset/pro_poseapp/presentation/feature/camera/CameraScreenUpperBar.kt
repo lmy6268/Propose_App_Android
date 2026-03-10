@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenButtons.ExpandableButton
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenUpperBar.UpperBar
-import com.hanadulset.pro_poseapp.utils.camera.ViewRate
+import com.hanadulset.pro_poseapp.presentation.feature.camera.model.ViewRate
 
 object CameraScreenUpperBar {
 

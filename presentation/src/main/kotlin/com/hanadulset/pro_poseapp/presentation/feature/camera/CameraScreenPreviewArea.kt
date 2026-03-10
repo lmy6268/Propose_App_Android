@@ -63,7 +63,7 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import coil.size.Dimension
 import coil.size.Scale
-import com.hanadulset.pro_poseapp.utils.pose.PoseData
+import com.hanadulset.pro_poseapp.presentation.feature.camera.model.PoseUIItem
 import kotlinx.coroutines.delay
 
 object CameraScreenPreviewArea {
@@ -105,7 +105,7 @@ object CameraScreenPreviewArea {
     @Composable
     fun PreviewArea(
         modifier: Modifier = Modifier,
-        poseData: () -> PoseData?,
+        poseData: () -> PoseUIItem?,
         poseOffsetState: () -> SizeF?,
         poseScaleState: () -> Float,
         capturedState: () -> Boolean,
@@ -289,7 +289,7 @@ object CameraScreenPreviewArea {
     fun ShowingPoseScreen(
         modifier: Modifier = Modifier,
         previewViewSize: () -> SizeF,
-        poseData: PoseData,
+        poseData: PoseUIItem,
         poseScale: () -> Float,
         poseOffset: () -> SizeF?,
         onLimitMaxScale: (Float) -> Unit,
@@ -348,9 +348,9 @@ object CameraScreenPreviewArea {
                     }
                 }
                 //포즈 이미지 페인터
-                val painter by rememberUpdatedState(newValue = poseItem.imageUri?.run {
+                val painter = poseItem.imageUri?.let { uri ->
                     rememberAsyncImagePainter(
-                        model = ImageRequest.Builder(LocalContext.current).data(this).size(
+                        model = ImageRequest.Builder(LocalContext.current).data(uri).size(
                             coil.size.Size(
                                 Dimension(
                                     poseItemSize.value.width.toInt()
@@ -360,7 +360,7 @@ object CameraScreenPreviewArea {
                             )
                         ).scale(Scale.FIT).build()
                     )
-                })
+                }
 
 
                 val isChecked = remember {

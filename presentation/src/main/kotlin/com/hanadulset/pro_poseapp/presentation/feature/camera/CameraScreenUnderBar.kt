@@ -62,7 +62,7 @@ import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenUnderB
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenUnderBar.galleryButtonSize
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenUnderBar.shutterButtonSize
 import com.hanadulset.pro_poseapp.presentation.feature.camera.components.PoseSelectSlider
-import com.hanadulset.pro_poseapp.utils.pose.PoseData
+import com.hanadulset.pro_poseapp.presentation.feature.camera.model.PoseUIItem
 
 object CameraScreenUnderBar {
 
@@ -307,8 +307,6 @@ fun ZoomButtonRow(
     }
 
 
-//    }
-
 
 }
 
@@ -317,7 +315,7 @@ fun ZoomButtonRow(
 @Composable
 fun ClickPoseBtnUnderBar(
     modifier: Modifier = Modifier,
-    poseList: () -> List<PoseData>?,
+    poseList: () -> List<PoseUIItem>?,
     galleryImageUri: () -> Uri?,
     initPoseItemScale: () -> Float = { 1F },
     currentSelectedPoseItemIdx: () -> Int,
@@ -507,9 +505,7 @@ fun PoseSelectionItem(
         ) { onClickEvent() }
     val painter = rememberAsyncImagePainter(
         model = ImageRequest.Builder(LocalContext.current)
-            .data(imageUri.run {
-                this ?: R.drawable.impossible_icon
-            }).size(with(LocalDensity.current) {
+            .data(imageUri ?: R.drawable.impossible_icon).size(with(LocalDensity.current) {
                 poseSize.toPx().toInt()
             }) //현재 버튼의 크기만큼 리사이징한다.
             .build()
@@ -615,25 +611,25 @@ fun PoseSelectionItem(
 @Preview
 fun PreviewSelector() {
     val poseList = listOf(
-        PoseData(
+        PoseUIItem(
             poseId = 0, imageUri = null, poseCat = 1
-        ), PoseData(
+        ), PoseUIItem(
             poseId = 0, poseCat = 1
-        ), PoseData(
+        ), PoseUIItem(
             poseId = 0, poseCat = 1
-        ), PoseData(
+        ), PoseUIItem(
             poseId = 0, poseCat = 1
-        ), PoseData(
+        ), PoseUIItem(
             poseId = 0, poseCat = 1
-        ), PoseData(
+        ), PoseUIItem(
             poseId = 0, poseCat = 1
-        ), PoseData(
+        ), PoseUIItem(
             poseId = 0, poseCat = 1
-        ), PoseData(
+        ), PoseUIItem(
             poseId = 0, poseCat = 1
-        ), PoseData(
+        ), PoseUIItem(
             poseId = 0, poseCat = 1
-        ), PoseData(
+        ), PoseUIItem(
             poseId = 0, poseCat = 1
         )
 

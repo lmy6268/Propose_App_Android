@@ -1,16 +1,12 @@
 package com.hanadulset.pro_poseapp.presentation
 
 import android.content.pm.ActivityInfo
-import android.os.Build
 import android.os.Bundle
-import android.view.View
-import android.view.WindowInsets
-import android.view.WindowInsetsController
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
@@ -19,12 +15,11 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.navigation.compose.rememberNavController
 import com.hanadulset.pro_poseapp.core.designsystem.theme.ProPoseTheme
 import com.hanadulset.pro_poseapp.presentation.core.MainScreen
-import com.hanadulset.pro_poseapp.utils.eventlog.AnalyticsManager
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    private val analyticsManager by lazy { AnalyticsManager(this.contentResolver) }
+    private val mainViewModel: MainViewModel by viewModels()
 
     //전체화면 적용
 
@@ -43,7 +38,7 @@ class MainActivity : ComponentActivity() {
         setFullScreen()
         WindowCompat.setDecorFitsSystemWindows(window, false)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LOCKED //회전 고정
-        analyticsManager.saveAppOpenEvent()
+        mainViewModel.onAppOpen()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,7 +64,7 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         //앱 종료 이벤트 발생
-        analyticsManager.saveAppClosedEvent()
+        mainViewModel.onAppClosed()
     }
 
 

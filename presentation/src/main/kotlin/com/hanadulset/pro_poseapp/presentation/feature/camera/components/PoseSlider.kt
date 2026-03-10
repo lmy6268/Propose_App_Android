@@ -30,7 +30,8 @@ import androidx.compose.ui.unit.sp
 import com.hanadulset.pro_poseapp.core.designsystem.component.CircularProgressBar
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenButtons
 import com.hanadulset.pro_poseapp.presentation.feature.camera.PoseSelectionItem
-import com.hanadulset.pro_poseapp.utils.pose.PoseData
+import com.hanadulset.pro_poseapp.presentation.feature.camera.PoseSelectionItem
+import com.hanadulset.pro_poseapp.presentation.feature.camera.model.PoseUIItem
 
 const val RECOMMEND_POSE = "포즈 추천 중.."
 
@@ -41,7 +42,7 @@ const val RECOMMEND_POSE = "포즈 추천 중.."
 fun PoseSelectSlider(
     modifier: Modifier = Modifier,
     currentSelectedIdx: () -> Int,
-    inputPosedDataList: () -> List<PoseData>?,
+    inputPosedDataList: () -> List<PoseUIItem>?,
     onSelectedPoseIndexEvent: (Int) -> Unit,
     itemTextColor: () -> Color
 ) {

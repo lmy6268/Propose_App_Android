@@ -16,7 +16,6 @@ dependencies {
     implementation(libs.bundles.android.core)
     testImplementation(libs.junit)
     androidTestImplementation(libs.bundles.android.test)
-    implementation(projects.utils)
     implementation(projects.domain)
     implementation(projects.core.designsystem)
 
@@ -44,6 +43,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtimeCompose)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.lifecycle.viewModelCompose)
+
+    implementation(libs.androidx.concurrent.futures)
+
 
 //    //업데이트 확인
 //    implementation 'com.google.android.play:app-update-ktx:2.1.0'

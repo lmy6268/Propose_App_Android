@@ -7,6 +7,7 @@ internal object ConventionRes {
         const val ANDROID_APPLICATION = "android.application"
         const val ANDROID_LIBRARY = "android.library"
         const val KOTLIN_ANDROID = "jetbrains.kotlin.android"
+        const val KOTLIN_JVM = "jetbrains.kotlin.jvm"
         const val HILT = "dagger.hilt"
         const val KSP = "google.devtool.ksp"
         const val ROOM = "androidx.room"

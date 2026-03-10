@@ -51,14 +51,14 @@ import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography
 import com.hanadulset.pro_poseapp.presentation.R
 import com.hanadulset.pro_poseapp.presentation.component.SettingBoxItem
 import com.hanadulset.pro_poseapp.presentation.component.SettingBoxItemWithToggle
-import com.hanadulset.pro_poseapp.utils.UserSet
+import com.hanadulset.pro_poseapp.presentation.feature.camera.model.UserUIItem
 
 object SettingScreen {
     @Composable
     fun Screen(
         modifier: Modifier = Modifier,
-        userSet: UserSet,
-        onSaveUserSet: (UserSet) -> Unit,
+        userSet: UserUIItem,
+        onSaveUserSet: (UserUIItem) -> Unit,
         onBackPressed: () -> Unit
     ) {
         val setState = remember {
@@ -88,7 +88,7 @@ object SettingScreen {
         LaunchedEffect(key1 = setState.value) {
             setState.value.run {
                 onSaveUserSet(
-                    UserSet(isCompOn, isPoseOn)
+                    UserUIItem(isCompOn, isPoseOn, poseCnt)
                 )
             }
         }
@@ -280,7 +280,7 @@ object SettingScreen {
 @Preview(name = "PIXEL_4_XL", device = Devices.PIXEL_4_XL)
 @Composable
 private fun TestSettingScreen() {
-    SettingScreen.Screen(userSet = UserSet(true), onSaveUserSet = {
+    SettingScreen.Screen(userSet = UserUIItem(true, true), onSaveUserSet = {
 
     }, onBackPressed = {
 

@@ -45,7 +45,7 @@ import com.hanadulset.pro_poseapp.core.designsystem.component.CircularProgressBa
 import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
 import com.hanadulset.pro_poseapp.presentation.R
 import com.hanadulset.pro_poseapp.presentation.core.CustomDialog
-import com.hanadulset.pro_poseapp.utils.camera.CameraState
+import com.hanadulset.pro_poseapp.presentation.feature.camera.model.CameraState
 import kotlinx.coroutines.delay
 
 object PrepareServiceScreens {

@@ -16,11 +16,11 @@ dependencies {
     androidTestImplementation(libs.bundles.android.test)
 
     implementation(projects.domain)
-    implementation(projects.utils)
     implementation(projects.opencv)
+    implementation(projects.core.db)
 
     implementation(libs.bundles.pytorch)
-    implementation(libs.bundles.cameraX)
+    implementation(libs.cameraX.core)
     implementation(libs.bundles.aws.s3)
 
     // Open csv file
@@ -36,5 +36,7 @@ dependencies {
     implementation(libs.pose.detection.accurate)
 
     implementation(libs.androidx.concurrent.futures)
+
+    implementation(libs.zip4j)
 
 }

@@ -1,9 +1,11 @@
 package com.hanadulset.pro_poseapp
 
-import com.hanadulset.pro_poseapp.data.repository.CameraRepositoryImpl
+import com.hanadulset.pro_poseapp.data.repository.AIRepositoryImpl
+import com.hanadulset.pro_poseapp.data.repository.AnalyticsRepositoryImpl
 import com.hanadulset.pro_poseapp.data.repository.ImageRepositoryImpl
 import com.hanadulset.pro_poseapp.data.repository.UserRepositoryImpl
-import com.hanadulset.pro_poseapp.domain.repository.CameraRepository
+import com.hanadulset.pro_poseapp.domain.repository.AIRepository
+import com.hanadulset.pro_poseapp.domain.repository.AnalyticsRepository
 import com.hanadulset.pro_poseapp.domain.repository.ImageRepository
 import com.hanadulset.pro_poseapp.domain.repository.UserRepository
 import dagger.Binds
@@ -12,23 +14,23 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
-@InstallIn(SingletonComponent::class)
 @Module
-//Hilt 적용시 각 의존성을 주입하는 모듈
+@InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
 
-    @Singleton
     @Binds
-    abstract fun bindCameraRepository(cameraRepositoryImpl: CameraRepositoryImpl): CameraRepository
-
     @Singleton
-    @Binds
     abstract fun bindImageRepository(imageRepositoryImpl: ImageRepositoryImpl): ImageRepository
 
-    @Singleton
     @Binds
+    @Singleton
+    abstract fun bindAIRepository(aiRepositoryImpl: AIRepositoryImpl): AIRepository
+
+    @Binds
+    @Singleton
     abstract fun bindUserRepository(userRepositoryImpl: UserRepositoryImpl): UserRepository
 
+    @Binds
+    @Singleton
+    abstract fun bindAnalyticsRepository(analyticsRepositoryImpl: AnalyticsRepositoryImpl): AnalyticsRepository
 }
-
-

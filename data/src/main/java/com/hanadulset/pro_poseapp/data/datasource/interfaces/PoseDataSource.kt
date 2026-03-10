@@ -1,9 +1,12 @@
 package com.hanadulset.pro_poseapp.data.datasource.interfaces
 
-import android.graphics.Bitmap
-import com.hanadulset.pro_poseapp.utils.pose.PoseDataResult
+import com.hanadulset.pro_poseapp.data.model.PoseResultDto
+import org.opencv.core.Mat
 
 interface PoseDataSource {
-    suspend fun recommendPose(backgroundBitmap: Bitmap): PoseDataResult
-    suspend fun preparePoseData() // 비동기 로딩을 위해 suspend 추가
+    // 데이터 사전 로드
+    suspend fun initPoseData()
+    
+    // 포즈 추천 요청 (일회성 결과 직접 반환)
+    suspend fun recommendPose(mat: Mat): PoseResultDto
 }

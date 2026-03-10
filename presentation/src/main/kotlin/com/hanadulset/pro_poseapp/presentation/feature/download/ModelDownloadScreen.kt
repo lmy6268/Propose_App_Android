@@ -52,8 +52,8 @@ import androidx.compose.ui.unit.sp
 import com.hanadulset.pro_poseapp.core.designsystem.theme.*
 import com.hanadulset.pro_poseapp.presentation.R
 import com.hanadulset.pro_poseapp.presentation.core.CustomDialog
-import com.hanadulset.pro_poseapp.utils.CheckResponse
-import com.hanadulset.pro_poseapp.utils.DownloadState
+import com.hanadulset.pro_poseapp.presentation.feature.download.model.CheckResponseUiItem
+import com.hanadulset.pro_poseapp.presentation.feature.download.model.DownloadStateUiItem
 import kotlin.math.roundToLong
 
 object ModelDownloadScreen {
@@ -79,7 +79,7 @@ object ModelDownloadScreen {
     //모델 다운로드가 진행될 화면
     @Composable
     fun ModelDownloadRequestScreen(
-        isCheck: CheckResponse?,
+        isCheck: CheckResponseUiItem?,
         moveToLoading: () -> Unit,
         moveToDownloadProgress: (Int) -> Unit,
         requestCheckDownload: () -> Unit = {}
@@ -97,17 +97,17 @@ object ModelDownloadScreen {
                 .background(LocalColors.current.primaryBlue100)
                 .navigationBarsPadding(),
         ) {
-            if (checkState!!.downloadType == CheckResponse.TYPE_MUST_DOWNLOAD
-                || checkState!!.downloadType == CheckResponse.TYPE_ADDITIONAL_DOWNLOAD
+            if (checkState!!.downloadType == CheckResponseUiItem.TYPE_MUST_DOWNLOAD
+                || checkState!!.downloadType == CheckResponseUiItem.TYPE_ADDITIONAL_DOWNLOAD
             ) {
                 CustomDialog.DownloadAlertDialog(
-                    isDownload = checkState!!.downloadType == CheckResponse.TYPE_MUST_DOWNLOAD,
+                    isDownload = checkState!!.downloadType == CheckResponseUiItem.TYPE_MUST_DOWNLOAD,
                     modifier = Modifier
                         .wrapContentSize()
                         .align(Alignment.BottomCenter),
                     totalSize = checkState!!.totalSize,
                     onDismissRequest = {
-                        if (checkState!!.downloadType == CheckResponse.TYPE_MUST_DOWNLOAD
+                        if (checkState!!.downloadType == CheckResponseUiItem.TYPE_MUST_DOWNLOAD
                         ) (context as Activity).finish()
                         else moveToLoading()
                     },
@@ -141,7 +141,7 @@ object ModelDownloadScreen {
     @Composable
     fun ModelDownloadProgressScreen(
         isDownload: Boolean?,
-        downloadedInfo: DownloadState,
+        downloadedInfo: DownloadStateUiItem,
         onDismissEvent: (Context) -> Unit,
     ) {
         val context = LocalContext.current
@@ -302,7 +302,7 @@ private fun TestRequestModal() {
 
     ModelDownloadScreen.ModelDownloadProgressScreen(
         isDownload = true,
-        DownloadState(
+        DownloadStateUiItem(
             currentBytes = 1000000,
             totalBytes = 100000000,
             currentFileIndex = 0,
@@ -320,7 +320,7 @@ private fun TestRequestModal() {
 @Composable
 private fun TestDialog() {
     ModelDownloadScreen.ModelDownloadRequestScreen(
-        isCheck = CheckResponse(),
+        isCheck = CheckResponseUiItem(),
         moveToLoading = { /*TODO*/ },
         moveToDownloadProgress = {}
     )

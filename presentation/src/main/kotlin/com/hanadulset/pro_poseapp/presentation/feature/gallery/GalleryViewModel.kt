@@ -3,7 +3,8 @@ package com.hanadulset.pro_poseapp.presentation.feature.gallery
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.hanadulset.pro_poseapp.domain.usecase.GalleryUseCases
-import com.hanadulset.pro_poseapp.utils.camera.ImageResult
+import com.hanadulset.pro_poseapp.presentation.feature.camera.model.ImageResultUIItem
+import com.hanadulset.pro_poseapp.presentation.mapper.toUI
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,7 +16,7 @@ import javax.inject.Inject
 class GalleryViewModel @Inject constructor(
     private val galleryUseCases: GalleryUseCases
 ) : ViewModel() {
-    private val _capturedImageState = MutableStateFlow<List<ImageResult>?>(null)
+    private val _capturedImageState = MutableStateFlow<List<ImageResultUIItem>?>(null)
     val capturedImageState = _capturedImageState.asStateFlow()
     private val _deleteCompleteState = MutableStateFlow<Boolean?>(null)
     val deleteCompleteState = _deleteCompleteState.asStateFlow()
@@ -24,7 +25,7 @@ class GalleryViewModel @Inject constructor(
     fun loadImages() {
         _capturedImageState.value = null
         viewModelScope.launch {
-            _capturedImageState.value = galleryUseCases.getImagesFromPicturesUseCase()
+            _capturedImageState.value = galleryUseCases.getImagesFromPicturesUseCase().map { it.toUI() }
         }
     }
 
@@ -32,7 +33,7 @@ class GalleryViewModel @Inject constructor(
         _deleteCompleteState.value = false
         viewModelScope.launch {
             val checkState =
-                if (isOnDialog.not()) galleryUseCases.deleteImageFromPicturesUseCase(uri = _capturedImageState.value!![index].dataUri!!)
+                if (isOnDialog.not()) galleryUseCases.deleteImageFromPicturesUseCase(uri = _capturedImageState.value!![index].dataUri!!.toString())
                 else isOnDialog
             if (checkState) {
                 _capturedImageState.update {
@@ -41,7 +42,7 @@ class GalleryViewModel @Inject constructor(
                     }.toList()
                     updatedList
                 }
-                _deleteCompleteState.value = true
+                _deleteCompleteState.update{true}
             }
         }
     }

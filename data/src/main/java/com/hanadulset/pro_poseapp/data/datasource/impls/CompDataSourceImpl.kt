@@ -1,13 +1,15 @@
 package com.hanadulset.pro_poseapp.data.datasource.impls
 
 import android.content.Context
-import android.graphics.Bitmap
+import android.util.Log
 import com.hanadulset.pro_poseapp.data.datasource.interfaces.CompDataSource
-import com.hanadulset.pro_poseapp.data.datasource.interfaces.VisionProcessDataSource
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.opencv.android.Utils
+import org.opencv.core.Mat
 import org.opencv.core.Size
+import org.opencv.imgproc.Imgproc
 import org.pytorch.IValue
 import org.pytorch.LiteModuleLoader
 import org.pytorch.Module
@@ -16,30 +18,47 @@ import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
 import kotlin.math.exp
+import androidx.core.graphics.createBitmap
 
 class CompDataSourceImpl @Inject constructor(
-    @param:ApplicationContext private val context: Context,
-    private val visionDS: VisionProcessDataSource
+    @param:ApplicationContext private val context: Context
 ) : CompDataSource {
 
-    private var module: Module? = null
+    companion object {
+        private const val COMP_MODEL_NAME = "vapnet.ptl"
+    }
 
-    override suspend fun prepareModel() = withContext(Dispatchers.IO) {
-        val file = File(context.dataDir, "vapnet.ptl")
+    private var compModule: Module? = null
+
+    override suspend fun loadModel() = withContext(Dispatchers.IO) {
+        val file = File(context.dataDir, COMP_MODEL_NAME)
         if (!file.exists()) {
-            context.assets.open("vapnet.ptl").use { input ->
+            context.assets.open(COMP_MODEL_NAME).use { input ->
                 FileOutputStream(file).use { input.copyTo(it) }
             }
         }
-        module = LiteModuleLoader.load(file.absolutePath)
-    }
+        Log.d("CompDataSource", "Loading model: $COMP_MODEL_NAME")
+        compModule = LiteModuleLoader.load(file.absolutePath)
+    }.also {  Log.d("CompDataSource", "Model loaded successfully") }
 
-    override suspend fun recommendCompData(backgroundBitmap: Bitmap): Pair<Float, Float> = withContext(Dispatchers.Default) {
-        val model = module ?: return@withContext Pair(0f, 0f)
-        val resized = visionDS.resizeBitmapWithOpenCV(backgroundBitmap, Size(224.0, 224.0))
+    override suspend fun recommendCompData(mat: Mat): Pair<Float, Float> = withContext(Dispatchers.Default) {
+        val model = compModule 
+        if (model == null) {
+            Log.e("CompDataSource", "Model is not loaded!")
+            return@withContext Pair(0f, 0f)
+        }
+
+        // 1. Mat -> Resize (224x224) -> Bitmap (Tensor용)
+        val resizedMat = Mat()
+        Imgproc.resize(mat, resizedMat, Size(224.0, 224.0), 0.0, 0.0, Imgproc.INTER_AREA)
+        val bitmap = createBitmap(224, 224)
+        Utils.matToBitmap(resizedMat, bitmap)
+        resizedMat.release()
+
+        // 2. Tensor 변환 및 추론
         val tensor = TensorImageUtils.bitmapToFloat32Tensor(
-            resized, 
-            floatArrayOf(0.485f, 0.456f, 0.406f), 
+            bitmap,
+            floatArrayOf(0.485f, 0.456f, 0.406f),
             floatArrayOf(0.229f, 0.224f, 0.225f)
         )
         
@@ -49,10 +68,12 @@ class CompDataSourceImpl @Inject constructor(
 
         val hIdx = if (adjustment[0] > adjustment[1]) 0 else 1
         val vIdx = if (adjustment[2] > adjustment[3]) 2 else 3
-        
-        Pair(
+
+        val res = Pair(
             if (exp(adjustment[hIdx].toDouble()) > 0.5) magnitude[hIdx] * (if (hIdx == 0) -1f else 1f) else 0f,
-            if (exp(adjustment[vIdx].toDouble()) > 0.5) magnitude[vIdx] * (if (vIdx == 2) -1f else 1f) else 0f
+            if (exp(adjustment[vIdx].toDouble()) > 0.5) magnitude[vIdx] * (if (hIdx == 2) -1f else 1f) else 0f
         )
+        Log.d("CompDataSource", "Inference result: $res")
+        res
     }
 }
