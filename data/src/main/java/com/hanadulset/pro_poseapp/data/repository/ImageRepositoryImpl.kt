@@ -8,11 +8,10 @@ import android.os.Build
 import android.provider.MediaStore
 import android.util.SizeF
 import androidx.core.graphics.scale
-import com.hanadulset.pro_poseapp.data.datasource.FileHandleDataSourceImpl
-import com.hanadulset.pro_poseapp.data.datasource.ImageProcessDataSourceImpl
-import com.hanadulset.pro_poseapp.data.datasource.ModelRunnerDataSourceDataSourceImpl
-import com.hanadulset.pro_poseapp.data.datasource.feature.CompDataSourceImpl
-import com.hanadulset.pro_poseapp.data.datasource.feature.PoseDataSourceImpl
+import com.hanadulset.pro_poseapp.data.datasource.interfaces.CompDataSource
+import com.hanadulset.pro_poseapp.data.datasource.interfaces.FileHandleDataSource
+import com.hanadulset.pro_poseapp.data.datasource.interfaces.PoseDataSource
+import com.hanadulset.pro_poseapp.data.datasource.interfaces.VisionProcessDataSource
 import com.hanadulset.pro_poseapp.domain.repository.ImageRepository
 import com.hanadulset.pro_poseapp.utils.camera.ImageResult
 import com.hanadulset.pro_poseapp.utils.pose.PoseDataResult
@@ -23,47 +22,29 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class ImageRepositoryImpl @Inject constructor(@param:ApplicationContext private val applicationContext: Context) :
-    ImageRepository {
-    private val modelRunnerImpl by lazy {
-        ModelRunnerDataSourceDataSourceImpl(applicationContext)
-    }
+class ImageRepositoryImpl @Inject constructor(
+    @param:ApplicationContext private val applicationContext: Context,
+    private val visionProcessDataSource: VisionProcessDataSource,
+    private val compDataSource: CompDataSource,
+    private val poseDataSource: PoseDataSource,
+    private val fileHandleDataSource: FileHandleDataSource
+) : ImageRepository {
 
-    private val poseDataSourceImpl by lazy {
-        PoseDataSourceImpl(applicationContext)
-    }
-
-    private val imageProcessDataSource by lazy {
-        ImageProcessDataSourceImpl()
-    }
-
-    private val fileHandleDataSource by lazy {
-        FileHandleDataSourceImpl(applicationContext)
-    }
-
-    private val compDataSource by lazy {
-        CompDataSourceImpl(modelRunnerImpl)
-    }
-
-
-    override suspend fun getRecommendCompInfo(backgroundBitmap: Bitmap) =
+    override suspend fun getRecommendCompInfo(backgroundBitmap: Bitmap): Pair<Float, Float> =
         withContext(Dispatchers.Default) {
             compDataSource.recommendCompData(backgroundBitmap)
         }
 
-
     override suspend fun getRecommendPose(
         backgroundBitmap: Bitmap
     ): PoseDataResult = withContext(Dispatchers.Default) {
-        poseDataSourceImpl.recommendPose(backgroundBitmap)
+        poseDataSource.recommendPose(backgroundBitmap)
     }
-
 
     override suspend fun getFixedScreen(backgroundBitmap: Bitmap): Bitmap =
         withContext(Dispatchers.Default) {
-            imageProcessDataSource.getFixedImage(bitmap = backgroundBitmap)
+            visionProcessDataSource.getFixedImage(bitmap = backgroundBitmap)
         }
-
 
     override suspend fun getLatestImage(): Uri? = withContext(Dispatchers.IO) {
         val data = fileHandleDataSource.loadCapturedImages(false)
@@ -71,13 +52,14 @@ class ImageRepositoryImpl @Inject constructor(@param:ApplicationContext private 
         else data[0].dataUri
     }
 
-
     override suspend fun preRunModel(): Boolean {
-        poseDataSourceImpl.preparePoseData()
-        return modelRunnerImpl.preRun()
+        return runCatching {
+            compDataSource.prepareModel()
+            poseDataSource.preparePoseData()
+            true
+        }.getOrDefault(false)
     }
 
-    //이미지에서 포즈를 가져오기
     override suspend fun getPoseFromImage(uri: Uri?): Bitmap? = withContext(Dispatchers.IO) {
         uri?.let { targetUri ->
             val contentResolver = applicationContext.contentResolver
@@ -107,7 +89,6 @@ class ImageRepositoryImpl @Inject constructor(@param:ApplicationContext private 
         fileHandleDataSource.loadCapturedImages(true)
     }
 
-
     override suspend fun deleteCapturedImage(uri: Uri): Boolean = withContext(Dispatchers.IO) {
         fileHandleDataSource.deleteCapturedImage(uri)
     }
@@ -116,15 +97,13 @@ class ImageRepositoryImpl @Inject constructor(@param:ApplicationContext private 
         backgroundBitmap: Bitmap,
         targetOffset: SizeF
     ): SizeF? = withContext(Dispatchers.Default) {
-        imageProcessDataSource.useOpticalFlow(
+        visionProcessDataSource.useOpticalFlow(
             targetOffset = targetOffset,
             bitmap = backgroundBitmap
         )
     }
 
     override fun stopPointOffset() {
-        imageProcessDataSource.stopToUseOpticalFlow()
+        visionProcessDataSource.stopToUseOpticalFlow()
     }
-
-
 }

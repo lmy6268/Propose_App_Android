@@ -29,6 +29,9 @@ coreKtx = "1.13.1"
 appcompat = "1.7.0"
 androidx-splash = "1.1.0-rc01"
 androidx-datastore = "1.0.0"
+# 추가: ListenableFuture를 코루틴 await()으로 변환해주는 라이브러리
+androidx-concurrent-futures = "1.2.0"
+
 
 # ── CameraX ──
 cameraX = "1.4.2"
@@ -85,7 +88,8 @@ androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = 
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroid" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
-
+# 추가
+androidx-concurrent-futures = { group = "androidx.concurrent", name = "concurrent-futures-ktx", version.ref = "androidx-concurrent-futures" }
 # ── Testing ──
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }

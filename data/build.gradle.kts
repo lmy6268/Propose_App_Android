@@ -35,4 +35,6 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.pose.detection.accurate)
 
+    implementation(libs.androidx.concurrent.futures)
+
 }

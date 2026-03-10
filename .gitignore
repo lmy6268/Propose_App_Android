@@ -16,3 +16,4 @@ upload_certificate.pem
 /utils/schemas
 # Gemini walkthrough (local only)
 .gemini/walkthrough.md
+.analysis
