@@ -1,4 +1,4 @@
-package com.hanadulset.pro_poseapp.presentation.feature.camera.model
+package com.hanadulset.pro_poseapp.presentation.feature.camera.components.preview.focusring.model
 
 import android.graphics.Color
 import androidx.core.graphics.toColor

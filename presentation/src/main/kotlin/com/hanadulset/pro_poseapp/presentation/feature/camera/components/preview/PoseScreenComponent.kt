@@ -1,22 +1,11 @@
-package com.hanadulset.pro_poseapp.presentation.feature.camera
+package com.hanadulset.pro_poseapp.presentation.feature.camera.components.preview
 
-import android.graphics.Bitmap
 import android.util.LayoutDirection
 import android.util.SizeF
-import android.view.MotionEvent
-import androidx.camera.core.MeteringPoint
-import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.AnimationState
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateTo
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
@@ -29,252 +18,31 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.input.pointer.RequestDisallowInterceptTouchEvent
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.zIndex
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import coil.size.Dimension
 import coil.size.Scale
 import com.hanadulset.pro_poseapp.presentation.feature.camera.components.common.pose.model.PoseUIItem
-import com.hanadulset.pro_poseapp.presentation.feature.camera.components.preview.CompGuideComponent
-import com.hanadulset.pro_poseapp.presentation.feature.camera.components.preview.PoseScreenComponent
-import com.hanadulset.pro_poseapp.presentation.feature.camera.components.preview.focusring.FocusRingComponent
-import kotlinx.coroutines.delay
 
-object CameraScreenPreviewArea {
-    private fun focusPointMovement(
-        motionEvent: MotionEvent,
-        updateValue: (Offset?) -> Unit,
-        localDensity: Density,
-        upperBarSize: () -> DpSize,
-        onFocusEvent: (Pair<MeteringPoint, Long>) -> Unit,
-        previewView: PreviewView
-    ): Boolean {
-        return when (motionEvent.action) {
-            MotionEvent.ACTION_DOWN -> {
-                updateValue(null)
-                val untouchableArea = with(localDensity) { upperBarSize().height.toPx() }
-                if (motionEvent.y > untouchableArea) {
-                    val pointer = Offset(motionEvent.x, motionEvent.y)
-                    updateValue(pointer.copy())
-                    onFocusEvent(
-                        Pair(
-                            previewView.meteringPointFactory.createPoint(
-                                pointer.x, pointer.y
-                            ), 2000L
-                        )
-                    )
-                }
-                false
-            }
-
-            else -> {
-                false
-            }
-        }
-    }
-
-
-    //미리보기 영역
-    @OptIn(ExperimentalComposeUiApi::class)
-    @Composable
-    fun PreviewArea(
-        modifier: Modifier = Modifier,
-        poseData: () -> PoseUIItem?,
-        poseOffsetState: () -> SizeF?,
-        poseScaleState: () -> Float,
-        capturedState: () -> Boolean,
-        preview: () -> PreviewView,
-        edgeImageBitmap: () -> Bitmap?,
-        isRecommendCompEnabled: () -> Boolean,
-        loadLastImage: () -> Unit,
-        upperBarSize: () -> DpSize,
-        pointerOffsetState: () -> Offset?,
-        initCamera: () -> Unit,
-        onFocusEvent: (Pair<MeteringPoint, Long>) -> Unit,
-        triggerNewPoint: (DpSize) -> Unit,
-        onStopCaptureAnimation: () -> Unit,
-        onStopTrackPoint: () -> Unit,
-        onPoseChangeOffset: (SizeF) -> Unit,
-        onPointMatched: (() -> Boolean) -> Unit,
-        onLimitMaxScale: (Float) -> Unit
-    ) {
-        val localDensity = LocalDensity.current
-
-
-        val previewViewSize = remember { mutableStateOf(DpSize.Zero) }
-
-        //카메라 촬영 시, 촬영 Effect
-        val flashColor by animateColorAsState(
-            targetValue = if (capturedState()) Color.White else Color.Unspecified,
-            animationSpec = tween(150, 0, easing = LinearEasing),
-            finishedListener = { if (capturedState()) onStopCaptureAnimation() },
-            label = ""
-        )
-
-
-        //포커스링 위치
-        val focusRingState = remember { mutableStateOf<Offset?>(null) }
-
-        //포커스링 활성화 시점
-        LaunchedEffect(key1 = focusRingState.value) {
-            if (focusRingState.value != null) {
-                delay(400)
-                focusRingState.value = null
-            }
-        }
-
-
-        Box(modifier) {
-            //미리보기
-            AndroidView(
-                modifier = modifier
-                    .animateContentSize { _, _ -> }
-                    .onSizeChanged {
-                        previewViewSize.value = localDensity.run {
-                            DpSize(it.width.toDp(), it.height.toDp())
-                        }
-                    }
-                    .pointerInteropFilter(RequestDisallowInterceptTouchEvent()) { motionEvent ->
-                        focusPointMovement(
-                            motionEvent = motionEvent,
-                            previewView = preview(),
-                            updateValue = {
-                                focusRingState.value = it
-                            },
-                            onFocusEvent = {
-                                onFocusEvent(it)
-                            },
-                            localDensity = localDensity,
-                            upperBarSize = { upperBarSize() }
-                        )
-                    },
-                factory = {
-                    loadLastImage()
-                    initCamera()
-                    preview()
-                },
-            ) {
-
-            }
-
-            //플래시 화면
-            Box(
-                modifier = modifier
-                    .size(previewViewSize.value)
-                    .drawBehind {
-                        drawRect(color = flashColor)
-                    }
-            )
-
-            //엣지 화면
-            ShowEdgeImage(
-                modifier = modifier.size(previewViewSize.value),
-                capturedEdgesBitmap = edgeImageBitmap
-            )
-            //구도 추천
-            if (isRecommendCompEnabled()) {
-                CompGuideComponent.MainGuide(modifier = modifier,
-                    previewSize = { previewViewSize.value },
-                    pointOffSet = pointerOffsetState,
-                    triggerPoint = triggerNewPoint,
-                    stopToTracking = onStopTrackPoint,
-                    onPointMatched = onPointMatched)
-            }
-
-            if (poseData() != null
-//                && isRecommendPoseEnabled()
-            ) {
-                PoseScreenComponent.ShowingPoseScreen(modifier = modifier,
-                    poseData = poseData()!!,
-                    poseScale = poseScaleState,
-                    onChangeOffset = onPoseChangeOffset,
-                    poseOffset = poseOffsetState,
-                    onLimitMaxScale = onLimitMaxScale,
-                    previewViewSize = { previewViewSize.value })
-            }
-
-            //포커스 위치
-            if (focusRingState.value != null) FocusRingComponent.FocusRing(
-                modifier = modifier.zIndex(2F),
-                color = Color.White,
-                pointer = focusRingState.value!!
-            )
-        }
-    }
-
-
-    @Composable
-    private fun FocusRing(
-        modifier: Modifier = Modifier, color: Color, pointer: Offset
-    ) {
-
-        val animationSize = remember {
-            AnimationState(150F)
-        }
-        val rectSize = Size(animationSize.value, animationSize.value)
-        LaunchedEffect(animationSize) {
-            animationSize.animateTo(
-                targetValue = 100F, animationSpec = tween(durationMillis = 200)
-            )
-        }
-        Canvas(
-            modifier = modifier.size(animationSize.value.dp)
-        ) {
-            drawRect(
-                color = color, topLeft = pointer.copy(
-                    pointer.x - rectSize.width / 2, pointer.y - rectSize.height / 2
-                ), size = rectSize, style = Stroke(
-                    width = 3.dp.toPx()
-                )
-            )
-            drawCircle(color, radius = 5F, center = pointer)
-        }
-
-    }
-
-    //고정된 화면을 보여주는 컴포저블
-    @Composable
-    fun ShowEdgeImage(
-        capturedEdgesBitmap: () -> Bitmap?, // 고정된 이미지
-        modifier: Modifier = Modifier, //수정자
-    ) {
-        capturedEdgesBitmap()?.run {
-            Image(
-                modifier = modifier.alpha(0.3F),
-                bitmap = this.asImageBitmap(),
-                contentDescription = "Edge Image"
-            )
-        }
-    }
-
+object PoseScreenComponent {
     @Composable
     fun ShowingPoseScreen(
         modifier: Modifier = Modifier,
@@ -476,19 +244,8 @@ object CameraScreenPreviewArea {
                         , painter = painter
                     )
                 }
-
-//                }
-
-//                    Canvas(Modifier.fillMaxSize()) {
-//                        drawCircle(
-//                            center = poseTopLeftOffset.value,
-//                            color = Color.Black,
-//                            radius = 5F
-//                        )
-//                    }
             }
         }
-
     }
 
 
@@ -515,5 +272,3 @@ object CameraScreenPreviewArea {
             this
     }
 }
-
-

@@ -1,4 +1,4 @@
-package com.hanadulset.pro_poseapp.presentation.feature.camera
+package com.hanadulset.pro_poseapp.presentation.feature.camera.components.lower
 
 import android.os.SystemClock
 import androidx.compose.animation.animateContentSize
@@ -75,14 +75,9 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
 import com.hanadulset.pro_poseapp.presentation.R
-import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenButtons.SwitchableButton
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.common.CommonButtons
 
-object CameraScreenButtons {
-    val pretendardFamily = FontFamily(
-        Font(R.font.pretendard_bold, FontWeight.Bold, FontStyle.Normal),
-        Font(R.font.pretendard_light, FontWeight.Light, FontStyle.Normal),
-    )
-
+object LowerButtons {
     private object LocalButtonRippleTheme : RippleTheme {
 
         private var defaultColor = Color.White
@@ -152,7 +147,7 @@ object CameraScreenButtons {
                     text = buttonText,
                     fontSize = 12.sp,
                     color = if (buttonState.not()) buttonTextColor else Color.Black,
-                    fontFamily = pretendardFamily,
+                    fontFamily = CommonButtons.pretendardFamily,
                     fontWeight = FontWeight.Bold
                 )
                 else if (innerIconDrawableId != null) Icon(
@@ -204,78 +199,12 @@ object CameraScreenButtons {
                 text = if (selected) "${buttonValue}X" else buttonValue.toString(),
                 fontSize = 10.sp,
                 color = if (selected) LocalColors.current.primaryBlue100 else LocalColors.current.textPrimary100,
-                fontFamily = pretendardFamily,
+                fontFamily = CommonButtons.pretendardFamily,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Light
 
             )
         }
     }
-
-    @Composable
-    fun SwitchableButton(
-        modifier: Modifier = Modifier,
-        init: Boolean,
-        buttonSize: DpSize = DpSize(23.dp, 15.dp),
-        positiveColor: Color,
-        negativeColor: Color,
-        onChangeState: (Boolean) -> Unit,
-        isEnabled: () -> Boolean = { true },
-        scale: Float = 2f,
-        strokeWidth: Dp = (buttonSize.height / 10),
-        gapBetweenThumbAndTrackEdge: Dp = (buttonSize.width / 9),
-    ) {
-
-        val switchON = rememberSaveable { mutableStateOf(init) }
-        val thumbRadius = (buttonSize.height / 2) - gapBetweenThumbAndTrackEdge
-        // To move thumb, we need to calculate the position (along x axis)
-        val animatePosition =
-            animateFloatAsState(
-                targetValue = if (switchON.value) with(LocalDensity.current) { (buttonSize.width - thumbRadius - gapBetweenThumbAndTrackEdge).toPx() }
-                else with(LocalDensity.current) { (thumbRadius + gapBetweenThumbAndTrackEdge).toPx() },
-                label = ""
-            )
-        Column(modifier) {
-            Canvas(
-                modifier = Modifier
-                    .size(buttonSize)
-                    .scale(scale = scale)
-                    .then(
-                        if (isEnabled()) {
-                            Modifier.pointerInput(Unit) {
-                                detectTapGestures(onTap = {
-                                    // This is called when the user taps on the canvas
-                                    switchON.value = !switchON.value
-                                    onChangeState(switchON.value)
-                                })
-                            }
-                        } else Modifier
-                    )
-            ) {
-                // Track
-                drawRoundRect(
-                    color = if (switchON.value) positiveColor else negativeColor,
-                    cornerRadius = CornerRadius(
-                        x = buttonSize.height.toPx(),
-                        y = buttonSize.height.toPx()
-                    ),
-                    style = Stroke(width = strokeWidth.toPx())
-                )
-
-                // Thumb
-                drawCircle(
-                    color = if (switchON.value) positiveColor else negativeColor,
-                    radius = thumbRadius.toPx(),
-                    center = Offset(
-                        x = animatePosition.value, y = size.height / 2
-                    )
-                )
-            }
-
-        }
-
-
-    }
-
 
     @Composable
     fun FixedButton(
@@ -365,232 +294,5 @@ object CameraScreenButtons {
         }
     }
 
-    object CustomIndication : Indication {
-        private class DefaultDebugIndicationInstance(
-            private val isPressed: State<Boolean>,
-        ) : IndicationInstance {
-            override fun ContentDrawScope.drawIndication() {
-                drawContent()
-                if (isPressed.value) {
-                    drawCircle(color = Color.Gray.copy(alpha = 0.3f))
-                }
-            }
-        }
 
-        @Composable
-        override fun rememberUpdatedInstance(interactionSource: InteractionSource): IndicationInstance {
-            val isPressed = interactionSource.collectIsPressedAsState()
-            return remember(interactionSource) {
-                DefaultDebugIndicationInstance(isPressed)
-            }
-        }
-    }
-
-    //확장가능한 버튼
-    @Composable
-    fun ExpandableButton(
-        itemList: List<String>, // 내부에 들어갈 값
-        type: String,  // 속성 값
-        modifier: Modifier = Modifier,
-        onSelectedItemEvent: (Int) -> Unit,
-        isExpanded: (Boolean) -> Unit,
-        defaultButtonSize: Dp = 44.dp,
-        defaultButtonColor: Color = LocalColors.current.textPrimary100,
-        triggerClose: () -> Boolean,
-    ) {
-        val isExpandedState = remember {
-            mutableStateOf(false)
-        }
-        val selectedIndexState = rememberSaveable { mutableIntStateOf(0) }
-        val closeExpandedWindow by rememberUpdatedState(newValue = {
-            isExpandedState.value = false
-            isExpanded(false)
-        })
-
-        val onBtnClicked by rememberUpdatedState(newValue = {
-            isExpandedState.value = true
-            isExpanded(true)
-        })
-
-        val expandableBtnSize = remember {
-            mutableStateOf(DpSize(100.dp, 100.dp))
-        }
-
-        if (isExpandedState.value) {
-            LaunchedEffect(key1 = triggerClose()) {
-                if (triggerClose()) closeExpandedWindow()
-            }
-        }
-        Box(
-            modifier = modifier
-                .animateContentSize(
-                    //크기 변경이 감지되면 애니메이션을 추가해준다.
-                    animationSpec = tween(
-                        durationMillis = 200, easing = LinearEasing
-                    )
-                )
-                .onGloballyPositioned { coordinates ->
-                    coordinates.size.let {
-                        expandableBtnSize.value = DpSize(it.width.dp, it.height.dp)
-                    }
-                }
-
-        ) {
-            if (isExpandedState.value) Box(
-                modifier
-                    .height(defaultButtonSize)
-                    .fillMaxWidth()
-                    .background(
-                        color = defaultButtonColor.copy(alpha = 0.8f),
-                        shape = RoundedCornerShape(30.dp)
-                    )
-            ) {
-                //닫는 버튼
-                IconButton(
-                    modifier = Modifier
-                        .size(defaultButtonSize)
-                        .align(Alignment.CenterStart),
-                    onClick = {
-                        closeExpandedWindow()
-                    }) {
-                    Icon(
-                        painterResource(id = R.drawable.based_circle),
-                        modifier = Modifier.border(
-                            width = 3.dp,
-                            shape = CircleShape,
-                            color = defaultButtonColor.copy(alpha = 0.8f)
-                        ),
-                        tint = Color.White,
-                        contentDescription = "background",
-                    )
-                    Icon(
-                        painterResource(id = R.drawable.close),
-                        contentDescription = "close",
-                    )
-                }
-                //선택지 화면
-                Row(
-                    Modifier
-                        .wrapContentHeight()
-                        .align(Alignment.Center)
-                        .fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                ) {
-                    for (idx in itemList.indices) {
-                        Box(
-                            modifier = Modifier
-                                .clickable(
-                                    indication = null,
-                                    interactionSource = remember { MutableInteractionSource() }) {
-                                    selectedIndexState.intValue = idx
-                                    onSelectedItemEvent(idx)
-                                }
-                                .wrapContentSize()
-                                .padding(10.dp)) {
-                            Text(
-                                text = itemList[idx],
-                                color = Color.White,
-                                fontSize = 14.sp,
-                                fontWeight = if (selectedIndexState.intValue == idx) FontWeight.Bold else FontWeight.Light,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-
-                    }
-                }
-            }
-            else IconButton(
-                modifier = modifier, onClick = onBtnClicked
-            ) {
-                Icon(
-                    modifier = Modifier
-                        .size(defaultButtonSize)
-                        .border(
-                            BorderStroke(2.dp, LocalColors.current.textPrimary100),
-                            shape = CircleShape
-                        ),
-                    painter = painterResource(id = R.drawable.based_circle),
-                    tint = LocalColors.current.background100,
-                    contentDescription = type
-                )
-                Text(
-                    textAlign = TextAlign.Center,
-                    color = LocalColors.current.textPrimary100,
-                    text = itemList[selectedIndexState.intValue], //화면 비 글씨 표기
-                    fontWeight = FontWeight(FontWeight.Bold.weight),
-                    fontSize = 14.sp
-                )
-            }
-
-        }
-    }
-
-    @Composable
-    fun NormalButton(
-        modifier: Modifier = Modifier,
-        isButtonEnable: Boolean = true,
-        buttonSize: Dp = 20.dp,
-        buttonName: String,
-        innerIconDrawableId: Int? = null,
-        innerIconDrawableSize: Dp = 10.dp,
-        innerIconColorTint: Color = Color.White,
-        buttonText: String? = null,
-        buttonTextSize: Int = 10,
-        buttonTextColor: Color = Color.White,
-        colorTint: Color = Color(0x80FAFAFA),
-        onClick: () -> Unit
-    ) {
-        val iconButtonPainter = rememberAsyncImagePainter(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(R.drawable.based_circle)
-                .build()
-        )
-        val innerIconDrawablePainter = rememberAsyncImagePainter(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(innerIconDrawableId)
-                .build()
-        )
-
-        IconButton(
-            enabled = isButtonEnable,
-            modifier = modifier.size(buttonSize),
-            onClick = { onClick() },
-        ) {
-            Icon(
-                modifier = modifier.size(buttonSize),
-                painter = iconButtonPainter,
-                tint = colorTint,
-                contentDescription = buttonName
-            )
-            if (buttonText != null) Text(
-                text = buttonText,
-                fontSize = buttonTextSize.sp,
-                color = buttonTextColor,
-                fontFamily = pretendardFamily,
-                fontWeight = FontWeight.Bold
-            )
-            if (innerIconDrawableId != null) {
-                Icon(
-                    modifier = Modifier.size(innerIconDrawableSize),
-                    painter = innerIconDrawablePainter,
-                    contentDescription = "$buttonName 아이콘",
-                    tint = innerIconColorTint
-                )
-            }
-        }
-    }
-
-}
-
-@Composable
-@Preview
-fun TestSwitch() {
-    SwitchableButton(
-        init = false,
-        positiveColor = Color(0x99999999),
-        negativeColor = Color(0xFFFFFF00),
-        modifier = Modifier,
-        onChangeState = {
-
-        })
 }

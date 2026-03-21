@@ -9,6 +9,7 @@ import android.graphics.Rect
 import android.graphics.YuvImage
 import android.media.Image
 import android.net.Uri
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageProxy
 import com.hanadulset.pro_poseapp.data.datasource.interfaces.FileHandleDataSource
 import com.hanadulset.pro_poseapp.data.mapper.toDomain
@@ -91,6 +92,7 @@ class ImageRepositoryImpl @Inject constructor(
     }
 
     // 캡처된 사진 처리 및 갤러리 저장
+    @ExperimentalGetImage
     override suspend fun processCapturedPhoto(image: Any, eventData: CaptureEventEntity): String {
         val bitmap = when (image) {
             is Bitmap -> image

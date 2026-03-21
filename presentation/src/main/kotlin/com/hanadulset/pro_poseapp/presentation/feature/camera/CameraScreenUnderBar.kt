@@ -56,13 +56,15 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
 import com.hanadulset.pro_poseapp.presentation.R
-import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenButtons.ParticularZoomButton
-import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenButtons.ToggledButton
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenUnderBar.defaultButtonSize
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenUnderBar.galleryButtonSize
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenUnderBar.shutterButtonSize
-import com.hanadulset.pro_poseapp.presentation.feature.camera.components.PoseSelectSlider
-import com.hanadulset.pro_poseapp.presentation.feature.camera.model.PoseUIItem
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.common.CommonButtons
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.common.pose.model.PoseUIItem
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.lower.LowerButtons
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.lower.LowerButtons.ParticularZoomButton
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.lower.LowerButtons.ToggledButton
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.lower.PoseSelectSlider
 
 object CameraScreenUnderBar {
 
@@ -165,7 +167,7 @@ fun UpperLayer(
             zoomLevelState = zoomLevelState()
         )
         //고정
-        CameraScreenButtons.FixedButton(
+        LowerButtons.FixedButton(
             modifier = Modifier.shadow(elevation = 2.dp, shape = CircleShape),
             buttonSize = defaultButtonSize,
             onFixedButtonPressedEvent = onFixedButtonClickEvent,
@@ -204,12 +206,12 @@ fun LowerLayer(
         )
 
         //셔터
-        CameraScreenButtons.ShutterButton(
+        LowerButtons.ShutterButton(
             buttonSize = shutterButtonSize
         ) { onShutterClickEvent() }
 
 
-        CameraScreenButtons.NormalButton(
+        CommonButtons.NormalButton(
             modifier = Modifier.shadow(elevation = 2.dp, shape = CircleShape),
             buttonSize = defaultButtonSize,
             buttonName = "포즈 추천 버튼",
@@ -256,7 +258,7 @@ private fun GalleryImageButton(
                 }
                 .clickable(
                     interactionSource = mutableInteractionSource,
-                    indication = CameraScreenButtons.CustomIndication,
+                    indication = CommonButtons.CustomIndication,
                 ) {
                     onClickEvent()
                 },
@@ -435,12 +437,12 @@ fun ClickPoseBtnUnderBar(
             )
 
             //셔터 버튼
-            CameraScreenButtons.ShutterButton(
+            LowerButtons.ShutterButton(
                 onClickEvent = onClickShutterBtn, buttonSize = shutterButtonSize
             )
 
             //포즈 새로고침 버튼
-            CameraScreenButtons.NormalButton(
+            CommonButtons.NormalButton(
                 modifier = Modifier.shadow(elevation = 2.dp, shape = CircleShape),
                 buttonName = "포즈 새로고침",
                 innerIconDrawableSize = defaultButtonSize / 3,
@@ -564,7 +566,7 @@ fun PoseSelectionItem(
         Text(
             text = if (imageUri == null) "없음" else "포즈 #$poseIndex",
             textAlign = TextAlign.Center,
-            fontFamily = CameraScreenButtons.pretendardFamily,
+            fontFamily = CommonButtons.pretendardFamily,
             fontWeight = FontWeight.Bold,
             fontSize = with(LocalDensity.current) { textSize.toSp() },
             color = itemTextColor,

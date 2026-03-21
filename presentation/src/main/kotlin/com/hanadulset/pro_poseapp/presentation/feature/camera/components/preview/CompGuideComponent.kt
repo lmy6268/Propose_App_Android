@@ -1,4 +1,4 @@
-package com.hanadulset.pro_poseapp.presentation.feature.camera
+package com.hanadulset.pro_poseapp.presentation.feature.camera.components.preview
 
 import android.content.Context
 import android.hardware.Sensor
@@ -35,19 +35,20 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.center
+import androidx.compose.ui.unit.dp
 import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.sqrt
 
-object CameraScreenCompScreen {
+object CompGuideComponent {
     const val SHAKE_THRESHOLD_DISTANCE = 80F * 80F // Threshold for check shaking
 
 
     @Composable
-    fun CompScreen(
+    fun MainGuide(
         modifier: Modifier = Modifier,
-        previewSize: () -> SizeF,
+        previewSize: () -> DpSize,
         pointOffSet: () -> Offset?,
         triggerPoint: (DpSize) -> Unit,
         onPointMatched: (() -> Boolean) -> Unit,
@@ -55,11 +56,6 @@ object CameraScreenCompScreen {
     ) {
         val localDensity = LocalDensity.current //현재 밀도
         val horizontalCheckCircleRadius = 60F
-        //구도 추천 화면의 크기
-        val compSize = remember {
-            mutableStateOf<DpSize?>(null)
-        }
-
 
         //구도추천 활성화 여부
         val isPointOn = remember { mutableStateOf(false) }
@@ -67,68 +63,49 @@ object CameraScreenCompScreen {
         val horizonState = remember {
             mutableStateOf(false)
         }
-        val localModifier = modifier.size(
-            localDensity.run {
-                DpSize(
-                    previewSize().width.toDp(),
-                    previewSize().height.toDp()
-                )
-            }
-        )
+
         Box(
-            modifier = localModifier
-                .onGloballyPositioned { coordinates ->
-                    coordinates.size.let {
-                        with(localDensity) {
-                            compSize.value = DpSize(
-                                it.width.toDp(), it.height.toDp()
-                            )
-                        }
-                    }
-                }) {
-            if (compSize.value != null) {
-                // 이제 센서는 화면이 켜져 있는 동안 딱 한 번만 등록됩니다.
-                SensorTrigger(
-                    enabled = !isPointOn.value // 포인트가 없을 때만 흔들림 감지 로직 작동
-                ) {
-                    isPointOn.value = true
-                    triggerPoint(compSize.value!!)
-                }
+            modifier = modifier.fillMaxSize()
+        ) {
+            // 이제 센서는 화면이 켜져 있는 동안 딱 한 번만 등록됩니다.
+            SensorTrigger(
+                enabled = !isPointOn.value // 포인트가 없을 때만 흔들림 감지 로직 작동
+            ) {
+                isPointOn.value = true
+                triggerPoint(previewSize())
+            }
 
-                // 구도 추천 포인트 표시
-                if (isPointOn.value && pointOffSet() != null) {
-                    CompGuidePoint(
-                        areaSize = { compSize.value!! },
-                        pointOffSetState = { pointOffSet()!! },
-                        onPointMatched = {
-                            onPointMatched { horizonState.value }
-                        },
-                        isOnHorizon = { horizonState.value },
-                        onStopToTracking = {
-                            // 포인트 추적 중단 시 다시 센서가 작동할 수 있게 상태 변경
-                            isPointOn.value = false
-                            stopToTracking()
-                        }
-                    )
-                }
-
-                //수평계
-                HorizontalCheckModule(
-                    modifier = localModifier,
-                    isShowHorizontalCheck = { compSize.value != null },
-                    centerRadius = horizontalCheckCircleRadius,
-                    centroid = with(localDensity) {
-                        compSize.value.let {
-                            Offset(
-                                (it!!.width / 2).toPx(), (it.height / 2).toPx()
-                            )
-                        }
+            // 구도 추천 포인트 표시
+            if (isPointOn.value && pointOffSet() != null) {
+                CompGuidePoint(
+                    areaSize = previewSize,
+                    pointOffSetState = { pointOffSet()!! },
+                    onPointMatched = {
+                        onPointMatched { horizonState.value }
                     },
-                    onMakeHorizontalEvent = {
-                        horizonState.value = it
+                    isOnHorizon = { horizonState.value },
+                    onStopToTracking = {
+                        // 포인트 추적 중단 시 다시 센서가 작동할 수 있게 상태 변경
+                        isPointOn.value = false
+                        stopToTracking()
                     }
                 )
             }
+
+            //수평계
+            HorizontalCheckModule(
+                modifier = modifier.fillMaxSize(),
+                isShowHorizontalCheck = { true },
+                centerRadius = horizontalCheckCircleRadius,
+                centroid = with(localDensity) {
+                    previewSize().let {
+                        Offset((it.width.toPx() / 2), (it.height.toPx() / 2))
+                    }
+                },
+                onMakeHorizontalEvent = {
+                    horizonState.value = it
+                }
+            )
         }
 
 
@@ -148,8 +125,12 @@ object CameraScreenCompScreen {
                     )
                 }
             }
-            val xRange = Range(0F, comp.width)
-            val yRange = Range(0F, comp.height)
+            // 옵티컬 플로우 오차(Drift)를 고려해 상하좌우 20% 마진 추가
+            val marginX = comp.width * 0.2f
+            val marginY = comp.height * 0.2f
+            
+            val xRange = Range(0F - marginX, comp.width + marginX)
+            val yRange = Range(0F - marginY, comp.height + marginY)
             val isInBoundary = this.x in xRange && this.y in yRange //영역 내에 포인트가 있는지 확인
             if (isInBoundary.not()) {
                 onStopToTracking() //구도 포인트를 제거함
@@ -341,8 +322,8 @@ object CameraScreenCompScreen {
     // 수평계 모듈
     @Composable
     fun HorizontalCheckModule(
-        isShowHorizontalCheck: () -> Boolean = { false },
         modifier: Modifier = Modifier,
+        isShowHorizontalCheck: () -> Boolean = { false },
         centerRadius: Float,
         centroid: Offset,
         onMakeHorizontalEvent: (Boolean) -> Unit = {}
@@ -453,7 +434,7 @@ object CameraScreenCompScreen {
 @Preview
 @Composable
 fun PreviewHorizontal() {
-    CameraScreenCompScreen.HorizontalCheckModule(
+    CompGuideComponent.HorizontalCheckModule(
         modifier = Modifier.fillMaxSize(), centerRadius = 30F, centroid = Offset(500F, 500F)
     )
 }

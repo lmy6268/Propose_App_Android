@@ -19,9 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
-import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenButtons.ExpandableButton
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.common.CommonButtons
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.upper.UpperButtons.ExpandableButton
 import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenUpperBar.UpperBar
-import com.hanadulset.pro_poseapp.presentation.feature.camera.model.ViewRate
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.upper.viewrate.model.ViewRate
 
 object CameraScreenUpperBar {
 
@@ -67,7 +68,7 @@ object CameraScreenUpperBar {
 
                 val INTERVAL = 400L
                 //정보화면 이동
-                CameraScreenButtons.NormalButton(
+                CommonButtons.NormalButton(
                     modifier = Modifier.border(
                         BorderStroke(
                             2.dp,

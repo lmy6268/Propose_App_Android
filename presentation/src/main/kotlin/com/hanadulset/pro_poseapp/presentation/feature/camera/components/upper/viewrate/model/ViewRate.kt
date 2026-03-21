@@ -1,4 +1,4 @@
-package com.hanadulset.pro_poseapp.presentation.feature.camera.model
+package com.hanadulset.pro_poseapp.presentation.feature.camera.components.upper.viewrate.model
 
 import android.util.Size
 

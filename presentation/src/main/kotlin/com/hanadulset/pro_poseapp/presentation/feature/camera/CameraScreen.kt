@@ -53,8 +53,8 @@ import com.canhub.cropper.CropImageContractOptions
 import com.canhub.cropper.CropImageOptions
 import com.hanadulset.pro_poseapp.presentation.component.AnimatedSlideToLeft
 import com.hanadulset.pro_poseapp.presentation.feature.camera.model.UserUIItem
-import com.hanadulset.pro_poseapp.presentation.feature.camera.model.PoseUIItem
-import com.hanadulset.pro_poseapp.presentation.feature.camera.model.ViewRate
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.common.pose.model.PoseUIItem
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.upper.viewrate.model.ViewRate
 import com.hanadulset.pro_poseapp.domain.model.CaptureEventEntity
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -140,9 +140,9 @@ fun Screen(
     BackHandler(onBack = {
         if (closeEdgeScreen().not()) {
             onFinishEvent()
-
         }
     })
+
     @Composable
     fun rememberGetContentActivityResult(
         aspectRatio: ViewRate,
@@ -229,11 +229,7 @@ fun Screen(
 
     val captureBtnClickState = remember { mutableStateOf(false) }
 
-    val maxScale = remember {
-        mutableFloatStateOf(
-            2F
-        )
-    }
+    val maxScale = remember {mutableFloatStateOf(2F)}
 
     val doPoseRecommend = {
         cameraViewModel.reqPoseRecommend()

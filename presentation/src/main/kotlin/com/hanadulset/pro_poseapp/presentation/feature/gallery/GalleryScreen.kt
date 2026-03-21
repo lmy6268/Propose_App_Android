@@ -52,7 +52,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.hanadulset.pro_poseapp.presentation.R
-import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenButtons
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.common.CommonButtons.pretendardFamily
 import com.hanadulset.pro_poseapp.presentation.feature.camera.model.ImageResultUIItem
 
 object GalleryScreen {
@@ -153,7 +153,7 @@ object GalleryScreen {
                                 .wrapContentSize(align = Alignment.Center),
                             text = if (updatedImageList.isEmpty()) "이미지 없음" else "${horizontalPagerState.currentPage + 1}/${updatedImageList.size}",
                             fontSize = fontSize,
-                            fontFamily = CameraScreenButtons.pretendardFamily,
+                            fontFamily = pretendardFamily,
                             fontWeight = FontWeight.Light,
                             color = Color.White
                         )
@@ -165,7 +165,7 @@ object GalleryScreen {
                                 },
                             text = "갤러리",
                             fontSize = fontSize,
-                            fontFamily = CameraScreenButtons.pretendardFamily,
+                            fontFamily = pretendardFamily,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
                             color = Color.White

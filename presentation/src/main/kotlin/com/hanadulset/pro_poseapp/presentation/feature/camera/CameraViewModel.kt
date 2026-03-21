@@ -2,42 +2,38 @@ package com.hanadulset.pro_poseapp.presentation.feature.camera
 
 import android.graphics.Bitmap
 import android.net.Uri
-import android.util.Log
 import android.util.Size
 import android.util.SizeF
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageProxy
 import androidx.camera.core.MeteringPoint
 import androidx.camera.core.Preview
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.center
-import androidx.compose.ui.geometry.Size as ComposeSize
+import androidx.core.net.toUri
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hanadulset.pro_poseapp.domain.model.CaptureEventEntity
+import com.hanadulset.pro_poseapp.domain.model.PoseEntity
 import com.hanadulset.pro_poseapp.domain.usecase.AiUseCases
 import com.hanadulset.pro_poseapp.domain.usecase.GalleryUseCases
 import com.hanadulset.pro_poseapp.domain.usecase.ImageUseCases
 import com.hanadulset.pro_poseapp.domain.usecase.UserUseCases
-import com.hanadulset.pro_poseapp.domain.model.UserEntity
-import com.hanadulset.pro_poseapp.domain.model.CaptureEventEntity
-import com.hanadulset.pro_poseapp.domain.model.ViewPortSize
 import com.hanadulset.pro_poseapp.presentation.feature.camera.model.CameraState
-import com.hanadulset.pro_poseapp.presentation.feature.camera.model.ViewRate
-import kotlinx.coroutines.Job
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.common.pose.model.PoseUIItem
+import com.hanadulset.pro_poseapp.presentation.feature.camera.model.UserUIItem
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.upper.viewrate.model.ViewRate
+import com.hanadulset.pro_poseapp.presentation.feature.camera.model.toDomain
+import com.hanadulset.pro_poseapp.presentation.feature.camera.model.toUIItem
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import com.hanadulset.pro_poseapp.presentation.feature.camera.model.UserUIItem
-import com.hanadulset.pro_poseapp.presentation.feature.camera.model.toDomain
-import com.hanadulset.pro_poseapp.presentation.feature.camera.model.toUIItem
 import javax.inject.Inject
-
-import com.hanadulset.pro_poseapp.presentation.feature.camera.model.PoseUIItem
-import androidx.core.net.toUri
+import androidx.compose.ui.geometry.Size as ComposeSize
 
 @HiltViewModel
 class CameraViewModel @Inject constructor(
@@ -77,7 +73,8 @@ class CameraViewModel @Inject constructor(
     private var compJob: Job? = null
 
     // 카메라 프레임 분석기 설정 (람다 대신 명시적 객체 사용하여 리소스 참조 안정화)
-    private val imageAnalyzer = ImageAnalysis.Analyzer { imageProxy -> imageUseCases.processImageFrameUseCase(imageProxy) }
+    private val imageAnalyzer =
+        ImageAnalysis.Analyzer { imageProxy -> imageUseCases.processImageFrameUseCase(imageProxy) }
 
     // 카메라 바인딩
     fun bindCameraToLifeCycle(
@@ -104,11 +101,11 @@ class CameraViewModel @Inject constructor(
             compJob?.cancel() // 사진 촬영 시 기존 구도 추천(트래킹) 해제
 //            cameraManager.sendShutterSound()
             val imageProxy = cameraManager.takePhoto()
-            
+
             val poseIndex = _selectedPoseItemIndex.value
             val poseList = _poseResultState.value
             val backgroundData = _backgroundDataState.value
-            
+
             val captureEventData = CaptureEventEntity(
                 poseID = if (poseList != null && poseIndex in poseList.indices) poseList[poseIndex].poseId else -1,
                 prevRecommendPoses = poseList?.map { it.poseId },
@@ -139,23 +136,17 @@ class CameraViewModel @Inject constructor(
                 val recommendedData = aiUseCases.recommendPoseUseCase()
                 // 추천된 데이터를 UI 상태에 직접 반영
                 _poseResultState.update {
-                    val mappedList = recommendedData.poseDataList.map { data ->
-                        PoseUIItem(
-                            poseId = data.poseId,
-                            poseCat = data.poseCat,
-                            bottomCenterRate = SizeF(data.bottomCenterRate.width, data.bottomCenterRate.height),
-                            sizeRate = SizeF(data.sizeRate.width, data.sizeRate.height),
-                            imageUri = data.imageUri?.toUri() ,
-                            imageScale = data.imageScale
-                        )
-                    }.toMutableList()
-                    
+                    val mappedList = recommendedData.poseDataList.map { it.toUI() }.toMutableList()
+
                     mappedList.apply {
                         add(0, PoseUIItem(poseId = -1, poseCat = -1)) // 전체보기용 더미 데이터 삽입
                     }
-                    
+
                     _userSetState.value?.let { userSet ->
-                        if (mappedList.size > userSet.poseCnt + 1) mappedList.subList(0, userSet.poseCnt + 1).toMutableList()
+                        if (mappedList.size > userSet.poseCnt + 1) mappedList.subList(
+                            0,
+                            userSet.poseCnt + 1
+                        ).toMutableList()
                         else mappedList
                     } ?: mappedList
                 }
@@ -169,16 +160,13 @@ class CameraViewModel @Inject constructor(
 
     // 구도 권장/추적 요청 (실시간 Flow 관찰 시작)
     fun reqCompRecommend(previewSize: ComposeSize) {
-        Log.d("CameraViewModel:", "Running ReqCompRecommend")
         previewSizeState = previewSize
         compJob?.cancel()
         compJob = viewModelScope.launch {
-            var nullStreakJob: Job? = null
-            Log.d("CameraViewModel", "Starting to collect recommendCompInfo flow")
+            var nullDebounceJob: Job? = null
             aiUseCases.recommendCompInfoUseCase().collect { res ->
-                Log.d("CameraViewModel", "Received update from AIRepository: $res")
                 if (res != null) {
-                    nullStreakJob?.cancel()
+                    nullDebounceJob?.cancel()
                     _modifiedPointState.update {
                         previewSizeState?.center?.let { center ->
                             Offset(
@@ -187,13 +175,12 @@ class CameraViewModel @Inject constructor(
                             )
                         }
                     }
-                } else {
+                }
+                else if (nullDebounceJob?.isActive != true) {
                     // 추적 손실 시 즉시 지우지 않고 버퍼 시간을 두어 깜빡임 완화
-                    if (nullStreakJob?.isActive != true) {
-                        nullStreakJob = launch {
-                            kotlinx.coroutines.delay(100) // 100ms 대기 (약 3~4프레임)
-                            _modifiedPointState.update { null }
-                        }
+                    nullDebounceJob = launch {
+                        kotlinx.coroutines.delay(150)
+                        _modifiedPointState.update { null }
                     }
                 }
             }
@@ -201,11 +188,10 @@ class CameraViewModel @Inject constructor(
     }
 
 
-
     // 카메라 포커스 설정
     fun setFocus(meteringPoint: MeteringPoint, durationMilliSeconds: Long) {
         cameraManager.setFocus(meteringPoint, durationMilliSeconds)
-    }   
+    }
 
     fun setZoomLevel(zoomLevel: Float) = cameraManager.setZoom(zoomLevel)
 
@@ -280,4 +266,14 @@ class CameraViewModel @Inject constructor(
             )
         )
     }
+
+    private fun PoseEntity.toUI(): PoseUIItem = PoseUIItem(
+        poseId = poseId,
+        poseCat = poseCat,
+        bottomCenterRate = SizeF(bottomCenterRate.width, bottomCenterRate.height),
+        sizeRate = SizeF(sizeRate.width, sizeRate.height),
+        imageUri = imageUri?.toUri(),
+        imageScale = imageScale
+    )
+
 }

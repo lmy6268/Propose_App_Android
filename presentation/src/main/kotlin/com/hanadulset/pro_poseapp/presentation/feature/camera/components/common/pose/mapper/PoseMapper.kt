@@ -1,9 +1,9 @@
-package com.hanadulset.pro_poseapp.presentation.feature.camera.mapper
+package com.hanadulset.pro_poseapp.presentation.feature.camera.components.common.pose.mapper
 
 import android.net.Uri
 import android.util.SizeF
 import com.hanadulset.pro_poseapp.domain.model.PoseEntity
-import com.hanadulset.pro_poseapp.presentation.feature.camera.model.PoseUIItem
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.common.pose.model.PoseUIItem
 
 fun PoseEntity.toUI() = PoseUIItem(
     poseId = poseId,
