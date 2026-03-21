@@ -14,9 +14,9 @@ abstract class DataSourceModule {
 
     @Binds
     @Singleton
-    abstract fun bindVisionProcessDataSource(
-        visionProcessDataSourceImpl: VisionProcessDataSourceImpl
-    ): VisionProcessDataSource
+    abstract fun bindTrackingDataSource(
+        trackingDataSourceImpl: TrackingDataSourceImpl
+    ): TrackingDataSource
 
     @Binds
     @Singleton
@@ -35,8 +35,12 @@ abstract class DataSourceModule {
     abstract fun bindFileHandleDataSource(
         fileHandleDataSourceImpl: FileHandleDataSourceImpl
     ): FileHandleDataSource
-    
-    // 기존에 있던 다른 데이터소스들도 여기에 함께 정의합니다.
+    @Binds
+    @Singleton
+    abstract fun bindFAAnalyticsDataSource(
+        faAnalyticsDataSourceImpl: FAAnalyticsDataSourceImpl
+    ): FAAnalyticsDataSource
+
     @Binds
     @Singleton
     abstract fun bindUserDataSource(
@@ -45,7 +49,9 @@ abstract class DataSourceModule {
 
     @Binds
     @Singleton
-    abstract fun bindCameraDataSource(
-        cameraDataSourceImpl: CameraDataSourceImpl
-    ): CameraDataSource
+    abstract fun bindNetworkDataSource(
+        networkDataSourceImpl: NetworkDataSourceImpl
+    ): NetworkDataSource
+
+
 }

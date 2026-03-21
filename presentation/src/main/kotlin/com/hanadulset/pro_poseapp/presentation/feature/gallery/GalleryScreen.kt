@@ -52,15 +52,15 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import com.hanadulset.pro_poseapp.presentation.R
-import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenButtons
-import com.hanadulset.pro_poseapp.utils.camera.ImageResult
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.common.CommonButtons.pretendardFamily
+import com.hanadulset.pro_poseapp.presentation.feature.camera.model.ImageResultUIItem
 
 object GalleryScreen {
     //최근 찍힌 이미지들을 목록으로 보여준다.
     @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun GalleryScreen(
-        imageList: List<ImageResult>,
+        imageList: List<ImageResultUIItem>,
         onDeleteImage: (Int) -> Unit,
         onBackPressed: () -> Unit
     ) {
@@ -153,7 +153,7 @@ object GalleryScreen {
                                 .wrapContentSize(align = Alignment.Center),
                             text = if (updatedImageList.isEmpty()) "이미지 없음" else "${horizontalPagerState.currentPage + 1}/${updatedImageList.size}",
                             fontSize = fontSize,
-                            fontFamily = CameraScreenButtons.pretendardFamily,
+                            fontFamily = pretendardFamily,
                             fontWeight = FontWeight.Light,
                             color = Color.White
                         )
@@ -165,7 +165,7 @@ object GalleryScreen {
                                 },
                             text = "갤러리",
                             fontSize = fontSize,
-                            fontFamily = CameraScreenButtons.pretendardFamily,
+                            fontFamily = pretendardFamily,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
                             color = Color.White
@@ -261,7 +261,7 @@ object GalleryScreen {
 @Composable
 fun Test() {
     GalleryScreen.GalleryScreen(
-        imageList = listOf(ImageResult(), ImageResult(), ImageResult(), ImageResult()),
+        imageList = listOf(ImageResultUIItem(), ImageResultUIItem(), ImageResultUIItem(), ImageResultUIItem()),
         onDeleteImage = {},
         onBackPressed = {}
     )

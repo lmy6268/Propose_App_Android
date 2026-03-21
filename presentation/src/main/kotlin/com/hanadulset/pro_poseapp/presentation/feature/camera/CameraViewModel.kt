@@ -2,291 +2,278 @@ package com.hanadulset.pro_poseapp.presentation.feature.camera
 
 import android.graphics.Bitmap
 import android.net.Uri
-import android.util.Log
 import android.util.Size
 import android.util.SizeF
 import androidx.camera.core.AspectRatio
-import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.MeteringPoint
 import androidx.camera.core.Preview
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.center
+import androidx.core.net.toUri
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.hanadulset.pro_poseapp.domain.model.CaptureEventEntity
+import com.hanadulset.pro_poseapp.domain.model.PoseEntity
 import com.hanadulset.pro_poseapp.domain.usecase.AiUseCases
-import com.hanadulset.pro_poseapp.domain.usecase.CameraUseCases
 import com.hanadulset.pro_poseapp.domain.usecase.GalleryUseCases
+import com.hanadulset.pro_poseapp.domain.usecase.ImageUseCases
 import com.hanadulset.pro_poseapp.domain.usecase.UserUseCases
-import com.hanadulset.pro_poseapp.utils.ImageUtils
-import com.hanadulset.pro_poseapp.utils.UserSet
-import com.hanadulset.pro_poseapp.utils.camera.CameraState
-import com.hanadulset.pro_poseapp.utils.camera.ViewRate
-import com.hanadulset.pro_poseapp.utils.eventlog.CaptureEventData
-import com.hanadulset.pro_poseapp.utils.pose.PoseData
+import com.hanadulset.pro_poseapp.presentation.feature.camera.model.CameraState
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.common.pose.model.PoseUIItem
+import com.hanadulset.pro_poseapp.presentation.feature.camera.model.UserUIItem
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.upper.viewrate.model.ViewRate
+import com.hanadulset.pro_poseapp.presentation.feature.camera.model.toDomain
+import com.hanadulset.pro_poseapp.presentation.feature.camera.model.toUIItem
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.conflate
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import androidx.compose.ui.geometry.Size as ComposeSize
 
-@ExperimentalGetImage
 @HiltViewModel
 class CameraViewModel @Inject constructor(
-    private val cameraUseCases: CameraUseCases,
-    private val aiUseCases: AiUseCases,
-    private val userUseCases: UserUseCases,
-    private val galleryUseCases: GalleryUseCases
+    private val imageUseCases: ImageUseCases, // 이미지 처리 관련 UseCase 허브
+    private val aiUseCases: AiUseCases, // AI 관련 UseCase 허브
+    private val userUseCases: UserUseCases, // 사용자 설정 관련 UseCase 허브
+    private val galleryUseCases: GalleryUseCases, // 갤러리 관련 UseCase 허브
+    private val cameraManager: CameraManager // 카메라 기능 직접 제어 매니저
 ) : ViewModel() {
 
-    private val _trackingSwitchON = MutableStateFlow(false)
-    private val _trackingTrigger = Channel<Unit>(Channel.CONFLATED)
-
-    init {
-        viewModelScope.launch {
-            _trackingTrigger.receiveAsFlow().conflate().collect {
-                if (_trackingSwitchON.value && _modifiedPointState.value != null) {
-                    val backgroundBitmap = _bitmapState.value ?: return@collect
-                    //이미지 사용하기
-                    val analyzedImageSize = Size(backgroundBitmap.width, backgroundBitmap.height)
-                    val res = cameraUseCases.updatePointOffsetUseCase(
-                        targetOffset = convertAnalyzedOffsetToPreviewOffset(
-                            reversed = true, offset = SizeF(
-                                _modifiedPointState.value!!.x, _modifiedPointState.value!!.y
-                            ), analyzedImageSize = analyzedImageSize
-                        ), backgroundBitmap = backgroundBitmap
-                    )
-                    if (res == null) {
-                        stopToTrack() //만약 에러인 경우 추적을 그만함.
-                    } else {
-                        _modifiedPointState.update {
-                            convertAnalyzedOffsetToPreviewOffset(
-                                false, res, analyzedImageSize = analyzedImageSize
-                            ).let { Offset(it.width, it.height) }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private val viewRateList = listOf(
-        ViewRate(
-            name = "4:3", aspectRatioType = AspectRatio.RATIO_4_3, aspectRatioSize = Size(3, 4)
-        ), ViewRate(
-            "16:9", aspectRatioType = AspectRatio.RATIO_16_9, aspectRatioSize = Size(9, 16)
-        )
-    )
-    private val _userSetState = MutableStateFlow<UserSet?>(null)
+    private val _userSetState = MutableStateFlow<UserUIItem?>(null)
     val userSetState = _userSetState.asStateFlow()
-
 
     private val _backgroundDataState = MutableStateFlow<Pair<Int, List<Double>>?>(null)
     val backgroundDataState = _backgroundDataState.asStateFlow()
 
-    private val _aspectRatioState = MutableStateFlow(viewRateList[0])
+    private val _aspectRatioState = MutableStateFlow(VIEW_RATE_LIST[0])
     val aspectRatioState = _aspectRatioState.asStateFlow()
-
 
     private val _previewState = MutableStateFlow(CameraState(CameraState.CAMERA_INIT_NOTHING))
 
-
     private val _capturedBitmapState = MutableStateFlow<Uri?>(null)
-    private val _poseResultState = MutableStateFlow<MutableList<PoseData>?>(null)
+    private val _poseResultState = MutableStateFlow<MutableList<PoseUIItem>?>(null)
     private val _fixedScreenState = MutableStateFlow<Bitmap?>(null)
     private val _modifiedPointState = MutableStateFlow<Offset?>(null)
+    private val _selectedPoseItemIndex = MutableStateFlow(1)
 
     val pointOffsetState = _modifiedPointState.asStateFlow()
-
-
     val capturedBitmapState = _capturedBitmapState.asStateFlow()
     val poseResultState = _poseResultState.asStateFlow()
-
-
     val fixedScreenState = _fixedScreenState.asStateFlow()
     val previewState = _previewState.asStateFlow()
-    private val _bitmapState = MutableStateFlow<Bitmap?>(null)
-    private val _bitmapDemandNow = MutableStateFlow(false)
+    val selectedPoseItemIndex = _selectedPoseItemIndex.asStateFlow()
 
-
-    private var previewSizeState: androidx.compose.ui.geometry.Size? = null
+    private var previewSizeState: ComposeSize? = null
     private val _poseOnRecommend = MutableStateFlow(false)
+    private var compJob: Job? = null
 
+    // 카메라 프레임 분석기 설정 (람다 대신 명시적 객체 사용하여 리소스 참조 안정화)
+    private val imageAnalyzer =
+        ImageAnalysis.Analyzer { imageProxy -> imageUseCases.processImageFrameUseCase(imageProxy) }
 
-    private val imageAnalyzer = ImageAnalysis.Analyzer { imageProxy ->
-        imageProxy.use {
-            _bitmapState.value = ImageUtils.imageToBitmap(it.image!!, it.imageInfo.rotationDegrees)
-            trackToNewOffset()
-        }
-    }
-
-
-    private fun convertAnalyzedOffsetToPreviewOffset(
-        reversed: Boolean, offset: SizeF, analyzedImageSize: Size
-    ): SizeF {
-        return if (reversed)
-            offset.let {
-                SizeF(
-                    (it.width / previewSizeState!!.width) * analyzedImageSize.width,
-                    (it.height / previewSizeState!!.height) * analyzedImageSize.height
-                )
-            } else offset.let {
-            SizeF(
-                (it.width / analyzedImageSize.width) * previewSizeState!!.width,
-                (it.height / analyzedImageSize.height) * previewSizeState!!.height
-            )
-        }
-    }
-
-
+    // 카메라 바인딩
     fun bindCameraToLifeCycle(
         lifecycleOwner: LifecycleOwner,
         surfaceProvider: Preview.SurfaceProvider,
         previewRotation: Int
     ) {
-        _previewState.value =
-            CameraState(cameraStateId = CameraState.CAMERA_INIT_ON_PROCESS)
+        _previewState.value = CameraState(cameraStateId = CameraState.CAMERA_INIT_ON_PROCESS)
         viewModelScope.launch {
-            val res = cameraUseCases.bindCameraUseCase(
+            val res = cameraManager.bindCamera(
                 lifecycleOwner,
                 surfaceProvider,
                 aspectRatio = aspectRatioState.value.aspectRatioType,
-                analyzer = imageAnalyzer,
-                previewRotation = previewRotation
+                previewRotation = previewRotation,
+                analyzer = imageAnalyzer
             )
             _previewState.value = res
         }
     }
 
-    fun getPhoto(captureEventData: CaptureEventData) {
+    // 사진 촬영
+    fun getPhoto() {
         viewModelScope.launch {
-            _capturedBitmapState.value = cameraUseCases.captureImageUseCase(captureEventData)
+            compJob?.cancel() // 사진 촬영 시 기존 구도 추천(트래킹) 해제
+//            cameraManager.sendShutterSound()
+            val imageProxy = cameraManager.takePhoto()
+
+            val poseIndex = _selectedPoseItemIndex.value
+            val poseList = _poseResultState.value
+            val backgroundData = _backgroundDataState.value
+
+            val captureEventData = CaptureEventEntity(
+                poseID = if (poseList != null && poseIndex in poseList.indices) poseList[poseIndex].poseId else -1,
+                prevRecommendPoses = poseList?.map { it.poseId },
+                timestamp = System.currentTimeMillis().toString(),
+                backgroundId = backgroundData?.first,
+                backgroundHog = backgroundData?.second
+            )
+
+            imageProxy.use { proxy ->
+                val uriString = imageUseCases.captureImageUseCase(proxy, captureEventData)
+                _capturedBitmapState.update { uriString.toUri() }
+            }
         }
     }
 
-    fun getViewRateList() = viewRateList
+    fun selectPoseItem(index: Int) {
+        _selectedPoseItemIndex.value = index
+    }
 
+    fun getViewRateList() = VIEW_RATE_LIST
+
+    // 포즈 추천 요청
     fun reqPoseRecommend() {
         if (_poseOnRecommend.value.not()) {
             _poseOnRecommend.value = true
             _poseResultState.value = null
-            if (_bitmapDemandNow.value.not()) _bitmapDemandNow.value = true
             viewModelScope.launch {
-                _bitmapState.value?.let { bitmap ->
-                    val recommendedData = aiUseCases.recommendPoseUseCase(bitmap)
-                    _poseResultState.update {
-                        recommendedData.poseDataList.apply {
-                            add(0, PoseData(poseId = -1, -1))
-                        }.subList(
-                            0,
-                            if (_userSetState.value != null) _userSetState.value!!.poseCnt + 1
-                            else recommendedData.poseDataList.size
-                        )
-                    }
-                    _backgroundDataState.update {
-                        recommendedData.let { Pair(it.backgroundId, it.backgroundAngleList) }
+                val recommendedData = aiUseCases.recommendPoseUseCase()
+                // 추천된 데이터를 UI 상태에 직접 반영
+                _poseResultState.update {
+                    val mappedList = recommendedData.poseDataList.map { it.toUI() }.toMutableList()
+
+                    mappedList.apply {
+                        add(0, PoseUIItem(poseId = -1, poseCat = -1)) // 전체보기용 더미 데이터 삽입
                     }
 
-                    _poseOnRecommend.value = false
+                    _userSetState.value?.let { userSet ->
+                        if (mappedList.size > userSet.poseCnt + 1) mappedList.subList(
+                            0,
+                            userSet.poseCnt + 1
+                        ).toMutableList()
+                        else mappedList
+                    } ?: mappedList
                 }
+                _backgroundDataState.update {
+                    Pair(recommendedData.backgroundId, recommendedData.backgroundAngleList)
+                }
+                _poseOnRecommend.value = false
             }
         }
     }
 
-
-    private fun trackToNewOffset() {
-        if (_trackingSwitchON.value && _modifiedPointState.value != null) {
-            _trackingTrigger.trySend(Unit)
-        }
-    }
-
-
-    fun startToTrack(previewSize: androidx.compose.ui.geometry.Size) {
+    // 구도 권장/추적 요청 (실시간 Flow 관찰 시작)
+    fun reqCompRecommend(previewSize: ComposeSize) {
         previewSizeState = previewSize
-        _trackingSwitchON.value = true
-        viewModelScope.launch {
-            _bitmapState.value?.let { bitmap ->
-                aiUseCases.recommendCompInfoUseCase(bitmap).let { res ->
+        compJob?.cancel()
+        compJob = viewModelScope.launch {
+            var nullDebounceJob: Job? = null
+            aiUseCases.recommendCompInfoUseCase().collect { res ->
+                if (res != null) {
+                    nullDebounceJob?.cancel()
                     _modifiedPointState.update {
-                        previewSizeState!!.center.let {
+                        previewSizeState?.center?.let { center ->
                             Offset(
-                                it.x * ((1F + res.first * 2)),
-                                it.y * ((1F + res.second * 2))
+                                center.x * (1F + res.first * 2),
+                                center.y * (1F + res.second * 2)
                             )
                         }
                     }
-
+                }
+                else if (nullDebounceJob?.isActive != true) {
+                    // 추적 손실 시 즉시 지우지 않고 버퍼 시간을 두어 깜빡임 완화
+                    nullDebounceJob = launch {
+                        kotlinx.coroutines.delay(150)
+                        _modifiedPointState.update { null }
+                    }
                 }
             }
         }
     }
 
-    fun stopToTrack() {
-        _trackingSwitchON.update { false }
-        _modifiedPointState.update { null }
-        cameraUseCases.stopPointOffsetUseCase()
+
+    // 카메라 포커스 설정
+    fun setFocus(meteringPoint: MeteringPoint, durationMilliSeconds: Long) {
+        cameraManager.setFocus(meteringPoint, durationMilliSeconds)
     }
 
-    fun setZoomLevel(zoomLevel: Float) = cameraUseCases.setZoomLevelUseCase(zoomLevel)
+    fun setZoomLevel(zoomLevel: Float) = cameraManager.setZoom(zoomLevel)
 
+    // 화면 비율 변경
     fun changeViewRate(idx: Int): Boolean {
-        val res = _aspectRatioState.value.aspectRatioType == viewRateList[idx].aspectRatioType
-        if (res.not()) _aspectRatioState.value = viewRateList[idx]
+        val res = _aspectRatioState.value.aspectRatioType == VIEW_RATE_LIST[idx].aspectRatioType
+        if (res.not()) {
+            _aspectRatioState.value = VIEW_RATE_LIST[idx]
+            compJob?.cancel()
+            _modifiedPointState.update { null }
+        }
         return res
-
     }
 
+    // 고정 화면 제어
     fun controlFixedScreen(isRequest: Boolean) {
         if (isRequest) {
             viewModelScope.launch {
-                _bitmapState.value?.let { backgroundBitmap ->
-                    _fixedScreenState.value = cameraUseCases.showFixedScreenUseCase(
-                        backgroundBitmap = backgroundBitmap
-                    )
-                }
+                // 파라미터 없이 호출하여 UseCase 내부에서 실시간 프레임을 획득하도록 함
+                val res: Bitmap? = imageUseCases.showFixedScreenUseCase()
+                _fixedScreenState.value = res
             }
         } else _fixedScreenState.value = null
-
     }
 
+    // 이미지로부터 포즈 정보 추출
     fun getPoseFromImage(uri: Uri) {
         viewModelScope.launch {
             _fixedScreenState.value = null
-            val res = aiUseCases.getPoseFromImageUseCase(uri)
+            // 타입 유추를 통한 호출
+            val res: Bitmap? = aiUseCases.getPoseFromImageUseCase(uri.toString())
             _fixedScreenState.value = res
-            Log.d("따오기 이미지: ", uri.toString())
-            galleryUseCases.deleteImageFromPicturesUseCase(uri)
+            galleryUseCases.deleteImageFromPicturesUseCase(uri.toString())
         }
     }
 
-
+    // 최근 촬영 이미지 획득 (썸네일용)
     fun getLastImage() {
         viewModelScope.launch {
-            _capturedBitmapState.value = cameraUseCases.getLatestImageUseCase()
+            val uriString = imageUseCases.getLatestImageUseCase()
+            _capturedBitmapState.value = uriString?.toUri()
         }
     }
 
-    fun setFocus(meteringPoint: MeteringPoint, durationMilliSeconds: Long) {
-        cameraUseCases.setFocusUseCase(meteringPoint, durationMilliSeconds)
-    }
-
-
+    // 사용자 설정 로드
     fun loadUserSet() {
         viewModelScope.launch {
-            _userSetState.update { userUseCases.loadUserSetUseCase() }
+            _userSetState.value = userUseCases.loadUserSetUseCase().toUIItem()
         }
     }
 
-    fun saveUserSet(userSet: UserSet) {
+    // 사용자 설정 저장
+    fun saveUserSet(userSet: UserUIItem) {
         viewModelScope.launch {
-            userUseCases.saveUserSetUseCase(userSet = userSet)
-
+            userUseCases.saveUserSetUseCase(userSet.toDomain())
+            _userSetState.value = userSet
         }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        cameraManager.unbind()
+    }
+
+    companion object {
+        // 화면 비율 리스트 상수화
+        private val VIEW_RATE_LIST = listOf(
+            ViewRate(
+                name = "4:3", aspectRatioType = AspectRatio.RATIO_4_3, aspectRatioSize = Size(3, 4)
+            ), ViewRate(
+                "16:9", aspectRatioType = AspectRatio.RATIO_16_9, aspectRatioSize = Size(9, 16)
+            )
+        )
+    }
+
+    private fun PoseEntity.toUI(): PoseUIItem = PoseUIItem(
+        poseId = poseId,
+        poseCat = poseCat,
+        bottomCenterRate = SizeF(bottomCenterRate.width, bottomCenterRate.height),
+        sizeRate = SizeF(sizeRate.width, sizeRate.height),
+        imageUri = imageUri?.toUri(),
+        imageScale = imageScale
+    )
 
 }

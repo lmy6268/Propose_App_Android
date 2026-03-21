@@ -48,7 +48,8 @@ import com.hanadulset.pro_poseapp.presentation.feature.gallery.GalleryViewModel
 import com.hanadulset.pro_poseapp.presentation.feature.setting.SettingScreen
 import com.hanadulset.pro_poseapp.presentation.feature.splash.PrepareServiceScreens
 import com.hanadulset.pro_poseapp.presentation.feature.splash.PrepareServiceViewModel
-import com.hanadulset.pro_poseapp.utils.camera.CameraState
+import com.hanadulset.pro_poseapp.presentation.feature.camera.model.UserUIItem
+import com.hanadulset.pro_poseapp.presentation.feature.camera.model.CameraState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -287,7 +288,7 @@ private fun NavGraphBuilder.usingCameraGraph(
             val userSet by cameraViewModel.userSetState.collectAsStateWithLifecycle()
             LaunchedEffect(key1 = Unit, key2 = userSet) { cameraViewModel.loadUserSet() }
             AnimatedSlideToRight(isVisible = userSet != null) {
-                SettingScreen.Screen(userSet = userSet!!, onSaveUserSet = { setting ->
+                SettingScreen.Screen(userSet = userSet!!, onSaveUserSet = { setting: UserUIItem ->
                     cameraViewModel.saveUserSet(setting)
                 }, onBackPressed = { navHostController.navigateUp() })
             }

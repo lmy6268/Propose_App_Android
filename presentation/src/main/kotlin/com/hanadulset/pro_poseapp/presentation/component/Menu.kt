@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.hanadulset.pro_poseapp.core.designsystem.icon.ProPoseIcon
 import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalColors
 import com.hanadulset.pro_poseapp.core.designsystem.theme.LocalTypography
-import com.hanadulset.pro_poseapp.presentation.feature.camera.CameraScreenButtons.SwitchableButton
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.common.CommonButtons.SwitchableButton
 
 @Composable
 fun SettingBoxItemWithToggle(

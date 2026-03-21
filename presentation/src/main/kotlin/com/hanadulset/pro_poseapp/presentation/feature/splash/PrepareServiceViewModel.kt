@@ -28,7 +28,7 @@ class PrepareServiceViewModel @Inject constructor(
     fun preLoadModel() {
         _modelLoadedState.value = false
         viewModelScope.launch {
-            _modelLoadedState.value = aiUseCases.preLoadModelUseCase()
+            _modelLoadedState.value = aiUseCases.preLoadModel()
             checkLoadAllPreRunMethod()
         }
 

@@ -29,7 +29,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -63,7 +62,10 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import coil.size.Dimension
 import coil.size.Scale
-import com.hanadulset.pro_poseapp.utils.pose.PoseData
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.common.pose.model.PoseUIItem
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.preview.CompGuideComponent
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.preview.PoseScreenComponent
+import com.hanadulset.pro_poseapp.presentation.feature.camera.components.preview.focusring.FocusRingComponent
 import kotlinx.coroutines.delay
 
 object CameraScreenPreviewArea {
@@ -105,7 +107,7 @@ object CameraScreenPreviewArea {
     @Composable
     fun PreviewArea(
         modifier: Modifier = Modifier,
-        poseData: () -> PoseData?,
+        poseData: () -> PoseUIItem?,
         poseOffsetState: () -> SizeF?,
         poseScaleState: () -> Float,
         capturedState: () -> Boolean,
@@ -127,7 +129,7 @@ object CameraScreenPreviewArea {
         val localDensity = LocalDensity.current
 
 
-        val previewViewSize = rememberSaveable { mutableStateOf(SizeF(0F, 0F)) }
+        val previewViewSize = remember { mutableStateOf(DpSize.Zero) }
 
         //카메라 촬영 시, 촬영 Effect
         val flashColor by animateColorAsState(
@@ -157,7 +159,7 @@ object CameraScreenPreviewArea {
                     .animateContentSize { _, _ -> }
                     .onSizeChanged {
                         previewViewSize.value = localDensity.run {
-                            SizeF(it.width.toDp().value, it.height.toDp().value)
+                            DpSize(it.width.toDp(), it.height.toDp())
                         }
                     }
                     .pointerInteropFilter(RequestDisallowInterceptTouchEvent()) { motionEvent ->
@@ -186,12 +188,7 @@ object CameraScreenPreviewArea {
             //플래시 화면
             Box(
                 modifier = modifier
-                    .size(
-                        DpSize(
-                            previewViewSize.value.width.dp,
-                            previewViewSize.value.height.dp
-                        )
-                    )
+                    .size(previewViewSize.value)
                     .drawBehind {
                         drawRect(color = flashColor)
                     }
@@ -199,27 +196,23 @@ object CameraScreenPreviewArea {
 
             //엣지 화면
             ShowEdgeImage(
-                modifier = modifier.size(
-                    DpSize(
-                        previewViewSize.value.width.dp, previewViewSize.value.height.dp
-                    )
-                ), capturedEdgesBitmap = edgeImageBitmap
+                modifier = modifier.size(previewViewSize.value),
+                capturedEdgesBitmap = edgeImageBitmap
             )
             //구도 추천
             if (isRecommendCompEnabled()) {
-                CameraScreenCompScreen.CompScreen(modifier = modifier,
+                CompGuideComponent.MainGuide(modifier = modifier,
+                    previewSize = { previewViewSize.value },
                     pointOffSet = pointerOffsetState,
                     triggerPoint = triggerNewPoint,
                     stopToTracking = onStopTrackPoint,
-                    onPointMatched = onPointMatched,
-                    previewSize = { previewViewSize.value })
+                    onPointMatched = onPointMatched)
             }
 
-            //포즈 화면 구성 -> 포즈 값만 있어도 됨.
             if (poseData() != null
 //                && isRecommendPoseEnabled()
             ) {
-                ShowingPoseScreen(modifier = modifier,
+                PoseScreenComponent.ShowingPoseScreen(modifier = modifier,
                     poseData = poseData()!!,
                     poseScale = poseScaleState,
                     onChangeOffset = onPoseChangeOffset,
@@ -229,14 +222,12 @@ object CameraScreenPreviewArea {
             }
 
             //포커스 위치
-            if (focusRingState.value != null) FocusRing(
+            if (focusRingState.value != null) FocusRingComponent.FocusRing(
                 modifier = modifier.zIndex(2F),
                 color = Color.White,
                 pointer = focusRingState.value!!
             )
         }
-
-
     }
 
 
@@ -267,7 +258,6 @@ object CameraScreenPreviewArea {
             drawCircle(color, radius = 5F, center = pointer)
         }
 
-
     }
 
     //고정된 화면을 보여주는 컴포저블
@@ -288,8 +278,8 @@ object CameraScreenPreviewArea {
     @Composable
     fun ShowingPoseScreen(
         modifier: Modifier = Modifier,
-        previewViewSize: () -> SizeF,
-        poseData: PoseData,
+        previewViewSize: () -> DpSize,
+        poseData: PoseUIItem,
         poseScale: () -> Float,
         poseOffset: () -> SizeF?,
         onLimitMaxScale: (Float) -> Unit,
@@ -302,7 +292,7 @@ object CameraScreenPreviewArea {
         val offsetOfPose by rememberUpdatedState(newValue = poseOffset())
         val boxSize by rememberUpdatedState(newValue = localDensity.run {
             previewViewSize().let {
-                SizeF(it.width.dp.toPx(), it.height.dp.toPx())
+                SizeF(it.width.toPx(), it.height.toPx())
             }
         })
 
@@ -348,9 +338,9 @@ object CameraScreenPreviewArea {
                     }
                 }
                 //포즈 이미지 페인터
-                val painter by rememberUpdatedState(newValue = poseItem.imageUri?.run {
+                val painter = poseItem.imageUri?.let { uri ->
                     rememberAsyncImagePainter(
-                        model = ImageRequest.Builder(LocalContext.current).data(this).size(
+                        model = ImageRequest.Builder(LocalContext.current).data(uri).size(
                             coil.size.Size(
                                 Dimension(
                                     poseItemSize.value.width.toInt()
@@ -360,7 +350,7 @@ object CameraScreenPreviewArea {
                             )
                         ).scale(Scale.FIT).build()
                     )
-                })
+                }
 
 
                 val isChecked = remember {

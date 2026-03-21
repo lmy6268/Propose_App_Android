@@ -11,7 +11,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import androidx.core.net.toUri
 import com.hanadulset.pro_poseapp.data.datasource.interfaces.FileHandleDataSource
-import com.hanadulset.pro_poseapp.utils.camera.ImageResult
+import com.hanadulset.pro_poseapp.data.model.ImageResultDto
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -21,9 +21,8 @@ import java.util.Locale
 import javax.inject.Inject
 
 class FileHandleDataSourceImpl @Inject constructor(
-    @param:ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context
 ) : FileHandleDataSource {
-    // ... (기존 로직 동일)
     override suspend fun saveImageToGallery(bitmap: Bitmap): Uri =
         withContext(Dispatchers.IO) {
             val sdf = System.currentTimeMillis()
@@ -61,8 +60,8 @@ class FileHandleDataSourceImpl @Inject constructor(
         }
 
 
-    override suspend fun loadCapturedImages(isReadAllImage: Boolean): List<ImageResult> {
-        val resList = mutableListOf<ImageResult>()
+    override suspend fun loadCapturedImages(isReadAllImage: Boolean): List<ImageResultDto> {
+        val resList = mutableListOf<ImageResultDto>()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val externalUri = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
             val selection = "${MediaStore.Images.ImageColumns.RELATIVE_PATH} like ?"
@@ -90,8 +89,8 @@ class FileHandleDataSourceImpl @Inject constructor(
                                 sdf.format(timestamp.toLong())
                             }
                             val imageUri = ContentUris.withAppendedId(externalUri, imageId)
-                            val imageResult = ImageResult(imageUri, takenDate = imageTakenDate)
-                            resList.add(imageResult)
+                            val imageResultDto = ImageResultDto(imageUri, takenDate = imageTakenDate)
+                            resList.add(imageResultDto)
                             if (isReadAllImage.not()) break 
                         }
                     } while (cursor.moveToNext())
@@ -102,7 +101,7 @@ class FileHandleDataSourceImpl @Inject constructor(
             if (imagesDir.exists()) {
                 imagesDir.listFiles().apply { this?.sortByDescending { it.lastModified() } }
                     ?.forEach {
-                        resList.add(ImageResult(it.toUri(), it.lastModified().toString()))
+                        resList.add(ImageResultDto(it.toUri(), it.lastModified().toString()))
                         if (isReadAllImage.not()) return resList.toList() 
                     }
             }
